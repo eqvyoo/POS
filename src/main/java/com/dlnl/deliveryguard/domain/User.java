@@ -47,4 +47,8 @@ public class User {
 
     @OneToMany(mappedBy = "user")
     private List<UserRole> userRoles;
+
+    public void updateRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
 }
