@@ -64,6 +64,7 @@ public class SecurityConfig {
         // 권한 설정
         http.authorizeHttpRequests((authorizeRequests) -> authorizeRequests
                 .requestMatchers("/register").hasRole("ADMIN")
+                .requestMatchers("/update-subscriptions").hasRole("ADMIN")
                 .requestMatchers(AUTH_WHITELIST).permitAll()
                 .anyRequest().authenticated()
         );

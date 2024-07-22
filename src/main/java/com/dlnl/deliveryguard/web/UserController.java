@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 public class UserController {
     @Autowired
@@ -52,6 +54,16 @@ public class UserController {
             return ResponseEntity.ok(loginResponse);
         } catch (Exception e) {
             return ResponseEntity.status(401).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/update-subscriptions")
+    public ResponseEntity<?> updateSubscriptions(@RequestBody List<SubscriptionUpdateRequest> requests) {
+        try {
+            userService.updateSubscriptions(requests);
+            return ResponseEntity.ok("Subscriptions updated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(e.getMessage());
         }
     }
 }

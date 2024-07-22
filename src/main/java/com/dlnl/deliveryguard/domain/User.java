@@ -9,6 +9,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
@@ -54,5 +55,13 @@ public class User {
 
     public void updateUpdatedAt(LocalDateTime now){
         this.updatedAt = now;
+    }
+
+    public void updateSubExpiredAt(Date subExpiredAt) {
+        this.subExpiredAt = subExpiredAt;
+    }
+
+    public void updateIsSubValid(Boolean isSubValid){
+        this.isSubValid = isSubValid;
     }
 }

@@ -9,6 +9,7 @@ import com.dlnl.deliveryguard.repository.UserRepository;
 import com.dlnl.deliveryguard.repository.UserRoleRepository;
 import com.dlnl.deliveryguard.web.LoginRequest;
 import com.dlnl.deliveryguard.web.LoginResponse;
+import com.dlnl.deliveryguard.web.SubscriptionUpdateRequest;
 import com.dlnl.deliveryguard.web.UserRegistrationRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 @Slf4j
 @Service
@@ -169,12 +171,18 @@ public class UserService {
                 .refreshToken(refreshToken)
                 .build();
     }
+
+    @Transactional
+    public void updateSubscriptions(List<SubscriptionUpdateRequest> requests) {
+        for (SubscriptionUpdateRequest request : requests) {
+            User user = userRepository.findById(request.getUserId())
+                    .orElseThrow(() -> new RuntimeException("User not found with id: " + request.getUserId()));
+            user.updateUpdatedAt(LocalDateTime.now());
+            user.updateSubExpiredAt(request.getSubExpiredAt());
+            userRepository.save(user);
+        }
+    }
 }
-
-
-    //todo: 사용자 정보 조회
-
-    //todo: 구독정보 갱신
 
     //todo: 사용자 비밀번호 변경
 
