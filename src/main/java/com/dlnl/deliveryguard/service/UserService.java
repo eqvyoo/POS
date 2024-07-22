@@ -7,11 +7,14 @@ import com.dlnl.deliveryguard.jwt.JwtUtil;
 import com.dlnl.deliveryguard.repository.RoleRepository;
 import com.dlnl.deliveryguard.repository.UserRepository;
 import com.dlnl.deliveryguard.repository.UserRoleRepository;
+import com.dlnl.deliveryguard.web.LoginRequest;
+import com.dlnl.deliveryguard.web.LoginResponse;
 import com.dlnl.deliveryguard.web.UserRegistrationRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -90,10 +93,42 @@ public class UserService {
 
         return "관리자 " + user.getUsername() + " 등록 완료";
     }
+    @Transactional
+    public void updateRefreshToken (Long id, String refreshToken){
+        User user = findUserById(id);
+        if (user != null) {
+            user.updateRefreshToken(refreshToken);
+            userRepository.save(user);
+        }
+    }
 
-    // todo: 관리자 사용자가 신규 사용자 생성
+    public User findByUsername (String username){
+        Optional<User> optionalUser = userRepository.findByUsername(username);
+        if (optionalUser.isPresent()) {
+            return optionalUser.get();
+        } else {
+            throw new RuntimeException(username + " User not found");
+        }
+    }
 
-    //todo: 사용자 로그인
+
+    public LoginResponse authenticateUser (LoginRequest loginRequest) throws Exception {
+        User user = findByUsername(loginRequest.getUsername());
+        if (user == null || !passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+            throw new BadCredentialsException("아이디 또는 비밀번호가 잘못 되었습니다. 아이디와 비밀번호를 정확히 입력해 주세요.");
+        }
+        Long id = user.getId();
+        final String accessToken = jwtUtil.generateAccessToken(id);
+        final String refreshToken = jwtUtil.generateRefreshToken(id);
+
+        updateRefreshToken(id, refreshToken);
+
+        return LoginResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
+    }
+}
 
     //todo: 토큰 로그인
 
@@ -105,4 +140,3 @@ public class UserService {
 
 
 
-}

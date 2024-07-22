@@ -5,6 +5,7 @@ import com.dlnl.deliveryguard.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,6 +25,17 @@ public class UserController {
     @PostMapping("/admin")
     public String createAdminUser(@RequestBody UserRegistrationRequest request) {
         return userService.registerAdminUser(request.getUsername(), request.getPassword());
+    }
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+        try {
+            LoginResponse loginResponse = userService.authenticateUser(loginRequest);
+            return ResponseEntity.ok(loginResponse);
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.status(401).body("Invalid username or password");
+        } catch (Exception e) {
+            throw new RuntimeException("유효하지 않은 접근입니다", e);
+        }
     }
 }
 

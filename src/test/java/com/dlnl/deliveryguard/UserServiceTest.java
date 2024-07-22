@@ -81,25 +81,6 @@ public class UserServiceTest {
         verify(userRepository, times(2)).save(any(User.class));
         verify(userRoleService, times(1)).saveUserRole(any(User.class), any(Role.class));
     }
-
-//    @Test
-//    public void registerNewUser_ShouldThrowException_WhenRoleNotFound() {
-//        UserRegistrationRequest request = new UserRegistrationRequest();
-//        request.setUsername("testuser");
-//        request.setPassword("password");
-//
-//        when(passwordEncoder.encode(request.getPassword())).thenReturn("encodedPassword");
-//        when(roleService.findByName("USER")).thenThrow(new RuntimeException("Role USER not found"));
-//
-//        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-//            userService.registerNewUser(request);
-//        });
-//
-//        assertEquals("Role USER not found", exception.getMessage());
-//        verify(userRepository, never()).save(any(User.class));
-//        verify(userRoleService, never()).saveUserRole(any(User.class), any(Role.class));
-//    }
-
     @Test
     @DisplayName("테스트용 관리자 회원가입 API 테스트")
     public void registerAdminUser_ShouldRegisterAdmin() {

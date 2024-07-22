@@ -60,7 +60,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 User userEntity = userService.findUserById(userId);
                 List<UserRole> userRoles = userRoleService.findByUser(userEntity);
                 List<SimpleGrantedAuthority> authorities = userRoles.stream()
-                        .map(userRole -> new SimpleGrantedAuthority(userRole.getRole().getName()))
+                        .map(userRole -> new SimpleGrantedAuthority("ROLE_" +userRole.getRole().getName()))
                         .collect(Collectors.toList());
 
                 UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
