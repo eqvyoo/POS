@@ -54,19 +54,22 @@ public class JwtUtil {
                 .signWith(SignatureAlgorithm.HS512, encodedSecretKey)
                 .compact();
     }
-
-    // 여기까진 괜찮은 듯
-
     public boolean validateToken(String token) {
-        try {
+        if(!isTokenExpired(token)){
             Jwts.parser().setSigningKey(encodedSecretKey).parseClaimsJws(token);
             return true;
-        } catch (Exception e) {
-            log.error(e.getMessage());
+        }else {
+            log.error("유효하지 않은 토큰입니다.");
             return false;
         }
     }
+    private Boolean isTokenExpired(String token) {
+        return extractAllClaims(token).getExpiration().before(new Date());
+    }
 
+    private Claims extractAllClaims(String token) {
+        return Jwts.parser().setSigningKey(encodedSecretKey).parseClaimsJws(token).getBody();
+    }
     public Long getIdFromToken(String token) {
         Claims claims = Jwts.parser().setSigningKey(encodedSecretKey).parseClaimsJws(token).getBody();
         return claims.get("id", Long.class);

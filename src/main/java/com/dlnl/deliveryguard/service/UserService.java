@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.Optional;
@@ -128,9 +129,48 @@ public class UserService {
                 .refreshToken(refreshToken)
                 .build();
     }
+
+    @Transactional
+    public LoginResponse loginWithRefreshToken(String refreshToken) {
+        if (!jwtUtil.validateToken(refreshToken)) {
+            throw new BadCredentialsException("Invalid Refresh Token");
+        }
+
+        Long userId = jwtUtil.getIdFromToken(refreshToken);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+
+        String newAccessToken = jwtUtil.generateAccessToken(userId);
+        String newRefreshToken = jwtUtil.generateRefreshToken(userId);
+        user.updateUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        return LoginResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .build();
+    }
+
+    @Transactional
+    public LoginResponse refreshAccessToken(String refreshToken) {
+        if (!jwtUtil.validateToken(refreshToken)) {
+            throw new BadCredentialsException("Invalid Refresh Token");
+        }
+
+        Long userId = jwtUtil.getIdFromToken(refreshToken);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+
+        String newAccessToken = jwtUtil.generateAccessToken(userId);
+        user.updateUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+        return LoginResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(refreshToken)
+                .build();
+    }
 }
 
-    //todo: 토큰 로그인
 
     //todo: 사용자 정보 조회
 
