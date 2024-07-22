@@ -9,6 +9,8 @@ import com.dlnl.deliveryguard.repository.UserRepository;
 import com.dlnl.deliveryguard.service.RoleService;
 import com.dlnl.deliveryguard.service.UserRoleService;
 import com.dlnl.deliveryguard.service.UserService;
+import com.dlnl.deliveryguard.web.LoginRequest;
+import com.dlnl.deliveryguard.web.LoginResponse;
 import com.dlnl.deliveryguard.web.UserRegistrationRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
@@ -23,8 +26,7 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -54,7 +56,7 @@ public class UserServiceTest {
     }
 
     @Test
-    @DisplayName("사용자의 회원가입을 관리자가 하는 API 테스트")
+    @DisplayName("관리자의 사용자 회원가입 테스트")
     public void registerNewUser_ShouldRegisterUser() {
         UserRegistrationRequest request = new UserRegistrationRequest();
         request.setUsername("testuser");
@@ -82,7 +84,7 @@ public class UserServiceTest {
         verify(userRoleService, times(1)).saveUserRole(any(User.class), any(Role.class));
     }
     @Test
-    @DisplayName("테스트용 관리자 회원가입 API 테스트")
+    @DisplayName("테스트용 관리자 회원가입 테스트")
     public void registerAdminUser_ShouldRegisterAdmin() {
         String username = "admin";
         String password = "password";
@@ -108,5 +110,99 @@ public class UserServiceTest {
         assertEquals("관리자 admin 등록 완료", response);
         verify(userRepository, times(2)).save(any(User.class));
         verify(userRoleService, times(1)).saveUserRole(any(User.class), any(Role.class));
+    }
+
+    @Test
+    @DisplayName("성공 로그인 테스트")
+    public void testAuthenticateUser_Success() throws Exception {
+        String username = "testuser";
+        String password = "password";
+        Long userId = 1L;
+        String encodedPassword = "encodedPassword";
+        String accessToken = "accessToken";
+        String refreshToken = "refreshToken";
+
+        User user = User.builder()
+                .id(userId)
+                .username(username)
+                .password(encodedPassword)
+                .build();
+
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setUsername(username);
+        loginRequest.setPassword(password);
+
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(password, encodedPassword)).thenReturn(true);
+        when(jwtUtil.generateAccessToken(userId)).thenReturn(accessToken);
+        when(jwtUtil.generateRefreshToken(userId)).thenReturn(refreshToken);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        LoginResponse loginResponse = userService.authenticateUser(loginRequest);
+
+        assertNotNull(loginResponse);
+        assertEquals(accessToken, loginResponse.getAccessToken());
+        assertEquals(refreshToken, loginResponse.getRefreshToken());
+
+        verify(userRepository, times(1)).findByUsername(username);
+        verify(passwordEncoder, times(1)).matches(password, encodedPassword);
+        verify(jwtUtil, times(1)).generateAccessToken(userId);
+        verify(jwtUtil, times(1)).generateRefreshToken(userId);
+        verify(userRepository, times(1)).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("유저 없는 로그인 테스트")
+    public void testAuthenticateUser_UserNotFound() {
+        String username = "testuser";
+        String password = "password";
+
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setUsername(username);
+        loginRequest.setPassword(password);
+
+        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            userService.authenticateUser(loginRequest);
+        });
+
+        assertEquals(username + " User not found", exception.getMessage());
+        verify(userRepository, times(1)).findByUsername(username);
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
+        verify(jwtUtil, never()).generateAccessToken(anyLong());
+        verify(jwtUtil, never()).generateRefreshToken(anyLong());
+    }
+
+    @Test
+    @DisplayName("비밀 번호 틀린 로그인 테스트")
+    public void testAuthenticateUser_InvalidPassword() {
+        String username = "testuser";
+        String password = "password";
+        Long userId = 1L;
+        String encodedPassword = "encodedPassword";
+
+        User user = User.builder()
+                .id(userId)
+                .username(username)
+                .password(encodedPassword)
+                .build();
+
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setUsername(username);
+        loginRequest.setPassword(password);
+
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(password, encodedPassword)).thenReturn(false);
+
+        Exception exception = assertThrows(BadCredentialsException.class, () -> {
+            userService.authenticateUser(loginRequest);
+        });
+
+        assertEquals("아이디 또는 비밀번호가 잘못 되었습니다. 아이디와 비밀번호를 정확히 입력해 주세요.", exception.getMessage());
+        verify(userRepository, times(1)).findByUsername(username);
+        verify(passwordEncoder, times(1)).matches(password, encodedPassword);
+        verify(jwtUtil, never()).generateAccessToken(anyLong());
+        verify(jwtUtil, never()).generateRefreshToken(anyLong());
     }
 }
