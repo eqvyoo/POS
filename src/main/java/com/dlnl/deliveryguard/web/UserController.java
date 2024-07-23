@@ -5,9 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -62,6 +60,16 @@ public class UserController {
         try {
             userService.updateSubscriptions(requests);
             return ResponseEntity.ok("Subscriptions updated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(e.getMessage());
+        }
+    }
+    @GetMapping("/info")
+    public ResponseEntity<?> getUserInfo(@RequestHeader("Authorization") String token) {
+        try {
+            String jwtToken = token.substring(7); // "Bearer " 부분 제거
+            UserInfoResponse userInfoResponse = userService.getUserInfo(jwtToken);
+            return ResponseEntity.ok(userInfoResponse);
         } catch (Exception e) {
             return ResponseEntity.status(400).body(e.getMessage());
         }

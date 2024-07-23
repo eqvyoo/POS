@@ -2,23 +2,20 @@ package com.dlnl.deliveryguard;
 
 import com.dlnl.deliveryguard.domain.Role;
 import com.dlnl.deliveryguard.domain.User;
-import com.dlnl.deliveryguard.domain.UserRole;
 import com.dlnl.deliveryguard.jwt.JwtUtil;
-import com.dlnl.deliveryguard.repository.RoleRepository;
 import com.dlnl.deliveryguard.repository.UserRepository;
 import com.dlnl.deliveryguard.service.RoleService;
 import com.dlnl.deliveryguard.service.UserRoleService;
 import com.dlnl.deliveryguard.service.UserService;
-import com.dlnl.deliveryguard.web.LoginRequest;
-import com.dlnl.deliveryguard.web.LoginResponse;
-import com.dlnl.deliveryguard.web.SubscriptionUpdateRequest;
-import com.dlnl.deliveryguard.web.UserRegistrationRequest;
+import com.dlnl.deliveryguard.web.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -29,7 +26,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Optional;
 
-import static org.apache.commons.lang3.time.DateUtils.addDays;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -411,6 +407,74 @@ public class UserServiceTest {
 
     private LocalDate convertToLocalDate(Date date) {
         return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+    }
+    @Test
+    @DisplayName("사용자 정보 조회 성공 테스트")
+    public void testGetUserInfo_Success() {
+        String token = "validToken";
+        Long userId = 1L;
+
+        User user = User.builder()
+                .id(userId)
+                .username("testuser")
+                .isSubValid(true)
+                .subExpiredAt(new Date())
+                .build();
+
+        when(jwtUtil.validateToken(token)).thenReturn(true);
+        when(jwtUtil.getIdFromToken(token)).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        UserInfoResponse userInfoResponse = userService.getUserInfo(token);
+
+        assertNotNull(userInfoResponse);
+        assertEquals(userId, userInfoResponse.getId());
+        assertEquals("testuser", userInfoResponse.getUsername());
+        assertEquals("참", userInfoResponse.getIsvalid());
+        assertEquals(user.getSubExpiredAt(), userInfoResponse.getSubExpiredAt());
+
+        verify(jwtUtil, times(1)).validateToken(token);
+        verify(jwtUtil, times(1)).getIdFromToken(token);
+        verify(userRepository, times(1)).findById(userId);
+    }
+
+    @Test
+    @DisplayName("유효하지 않은 토큰으로 사용자 정보 조회 실패 테스트")
+    public void testGetUserInfo_InvalidToken() {
+        String token = "invalidToken";
+
+        when(jwtUtil.validateToken(token)).thenReturn(false);
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            userService.getUserInfo(token);
+        });
+
+        assertEquals("Invalid JWT token", exception.getMessage());
+
+        verify(jwtUtil, times(1)).validateToken(token);
+        verify(jwtUtil, never()).getIdFromToken(anyString());
+        verify(userRepository, never()).findById(anyLong());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 사용자로 정보 조회 실패 테스트")
+    public void testGetUserInfo_UserNotFound() {
+        String token = "validToken";
+        Long userId = 1L;
+
+        when(jwtUtil.validateToken(token)).thenReturn(true);
+        when(jwtUtil.getIdFromToken(token)).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            userService.getUserInfo(token);
+        });
+
+        assertEquals("User not found with id: " + userId, exception.getMessage());
+
+        verify(jwtUtil, times(1)).validateToken(token);
+        verify(jwtUtil, times(1)).getIdFromToken(token);
+        verify(userRepository, times(1)).findById(userId);
     }
 }
 

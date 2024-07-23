@@ -7,10 +7,7 @@ import com.dlnl.deliveryguard.jwt.JwtUtil;
 import com.dlnl.deliveryguard.repository.RoleRepository;
 import com.dlnl.deliveryguard.repository.UserRepository;
 import com.dlnl.deliveryguard.repository.UserRoleRepository;
-import com.dlnl.deliveryguard.web.LoginRequest;
-import com.dlnl.deliveryguard.web.LoginResponse;
-import com.dlnl.deliveryguard.web.SubscriptionUpdateRequest;
-import com.dlnl.deliveryguard.web.UserRegistrationRequest;
+import com.dlnl.deliveryguard.web.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -175,8 +172,7 @@ public class UserService {
     @Transactional
     public void updateSubscriptions(List<SubscriptionUpdateRequest> requests) {
         for (SubscriptionUpdateRequest request : requests) {
-            User user = userRepository.findById(request.getUserId())
-                    .orElseThrow(() -> new RuntimeException("User not found with id: " + request.getUserId()));
+            User user = findUserById(request.getUserId());
             user.updateUpdatedAt(LocalDateTime.now());
             if (request.getIsSubValid() != null && !request.getIsSubValid()) {
                 user.updateSubExpiredAt(new Date());
@@ -187,6 +183,31 @@ public class UserService {
             userRepository.save(user);
         }
     }
+
+    public UserInfoResponse getUserInfo(String jwtToken) {
+        if (!jwtUtil.validateToken(jwtToken)) {
+            throw new RuntimeException("Invalid JWT token");
+        }
+
+        Long userId = jwtUtil.getIdFromToken(jwtToken);
+        User user = findUserById(userId);
+        String isValid;
+
+        if (user.getIsSubValid()){
+            isValid = "참";
+        }else{
+            isValid = "거짓";
+        }
+
+        return UserInfoResponse.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .isvalid(isValid)
+                .subExpiredAt(user.getSubExpiredAt())
+                .build();
+
+    }
+
 }
 
     //todo: 사용자 비밀번호 변경
