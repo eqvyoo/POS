@@ -392,6 +392,61 @@ public void registerAdminUser_ShouldRegisterAdmin() throws Exception {
         verify(passwordEncoder, never()).encode(anyString());
         verify(userRepository, never()).save(any(User.class));
     }
+
+    @Test
+    @DisplayName("액세스 토큰 재발급 성공 테스트")
+    public void reissueAccessToken_ShouldReissueAccessToken() {
+        String token = "Bearer validToken";
+        String jwtToken = "validToken";
+        Long userId = 1L;
+        String newAccessToken = "newAccessToken";
+
+        User user = User.builder()
+                .id(userId)
+                .username("testuser")
+                .build();
+
+        when(jwtUtil.validateToken(jwtToken)).thenReturn(true);
+        when(jwtUtil.getIdFromToken(jwtToken)).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(jwtUtil.generateAccessToken(userId)).thenReturn(newAccessToken);
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        ReissueAccessTokenResponse response = userService.reissueAccessToken(token);
+
+        assertNotNull(response);
+        assertEquals(newAccessToken, response.getAccessToken());
+
+        verify(jwtUtil, times(1)).validateToken(jwtToken);
+        verify(jwtUtil, times(1)).getIdFromToken(jwtToken);
+        verify(userRepository, times(1)).findById(userId);
+        verify(jwtUtil, times(1)).generateAccessToken(userId);
+        verify(userRepository, times(1)).save(user);
+    }
+
+    @Test
+    @DisplayName("액세스 토큰 재발급 실패 테스트 - 사용자 없음")
+    public void reissueAccessToken_ShouldThrowExceptionWhenUserNotFound() {
+        String token = "Bearer validToken";
+        String jwtToken = "validToken";
+        Long userId = 1L;
+
+        when(jwtUtil.validateToken(jwtToken)).thenReturn(true);
+        when(jwtUtil.getIdFromToken(jwtToken)).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            userService.reissueAccessToken(token);
+        });
+
+        assertEquals(userId + "번 사용자는 존재하지 않습니다.", exception.getMessage());
+
+        verify(jwtUtil, times(1)).validateToken(jwtToken);
+        verify(jwtUtil, times(1)).getIdFromToken(jwtToken);
+        verify(userRepository, times(1)).findById(userId);
+        verify(jwtUtil, never()).generateAccessToken(userId);
+        verify(userRepository, never()).save(any(User.class));
+    }
 }
 
 

@@ -113,8 +113,8 @@ public class UserService {
 
 
     @Transactional
-    public ReissueAccessTokenResponse reissueAccessToken(ReissueAccessTokenRequest reissueAccessTokenRequest) {
-        String accessToken = reissueAccessTokenRequest.getAccessToken().substring(7);
+    public ReissueAccessTokenResponse reissueAccessToken(String token) {
+        String accessToken = token.substring(7);
         jwtUtil.validateToken(accessToken);
         Long userId = jwtUtil.getIdFromToken(accessToken);
         User user = findUserById(userId);

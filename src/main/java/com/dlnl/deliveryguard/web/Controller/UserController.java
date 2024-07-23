@@ -32,7 +32,7 @@ public class UserController {
             String response = userService.registerAdminUser(request.getUsername(), request.getPassword());
             return ResponseEntity.ok(response);
         }catch (BadCredentialsException e) {
-            return ResponseEntity.status(401).body("Invalid username or password");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
@@ -43,16 +43,16 @@ public class UserController {
             LoginResponse loginResponse = userService.authenticateUser(loginRequest);
             return ResponseEntity.ok(loginResponse);
         } catch (BadCredentialsException e) {
-            return ResponseEntity.status(401).body("Invalid username or password");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
     @PostMapping("/reissue-token")
-    public ResponseEntity<?> refreshAccessToken(@RequestBody ReissueAccessTokenRequest reissueAccessTokenRequest) {
+    public ResponseEntity<?> refreshAccessToken(@RequestHeader("Authorization") String token) {
         try {
-            ReissueAccessTokenResponse response = userService.reissueAccessToken(reissueAccessTokenRequest);
+            ReissueAccessTokenResponse response = userService.reissueAccessToken(token);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(401).body(e.getMessage());
