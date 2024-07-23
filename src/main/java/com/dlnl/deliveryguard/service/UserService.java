@@ -178,7 +178,12 @@ public class UserService {
             User user = userRepository.findById(request.getUserId())
                     .orElseThrow(() -> new RuntimeException("User not found with id: " + request.getUserId()));
             user.updateUpdatedAt(LocalDateTime.now());
-            user.updateSubExpiredAt(request.getSubExpiredAt());
+            if (request.getIsSubValid() != null && !request.getIsSubValid()) {
+                user.updateSubExpiredAt(new Date());
+                user.updateIsSubValid(false);
+            } else {
+                user.updateSubExpiredAt(request.getSubExpiredAt());
+            }
             userRepository.save(user);
         }
     }

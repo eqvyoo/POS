@@ -11,6 +11,7 @@ import com.dlnl.deliveryguard.service.UserRoleService;
 import com.dlnl.deliveryguard.service.UserService;
 import com.dlnl.deliveryguard.web.LoginRequest;
 import com.dlnl.deliveryguard.web.LoginResponse;
+import com.dlnl.deliveryguard.web.SubscriptionUpdateRequest;
 import com.dlnl.deliveryguard.web.UserRegistrationRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,9 +24,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Optional;
 
+import static org.apache.commons.lang3.time.DateUtils.addDays;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -359,9 +363,55 @@ public class UserServiceTest {
         verify(userRepository, never()).save(any(User.class));
     }
 
+    @Test
+    @DisplayName("구독 정보 갱신 성공 테스트")
+    public void testUpdateSubscriptions_Success() {
+        Date currentDate = new Date();
+        SubscriptionUpdateRequest request1 = new SubscriptionUpdateRequest(1L, true, addDays(currentDate, 30));
+        SubscriptionUpdateRequest request2 = new SubscriptionUpdateRequest(2L, false, new Date());
 
+        User user1 = User.builder().id(1L).username("user1").isSubValid(true).subExpiredAt(currentDate).build();
+        User user2 = User.builder().id(2L).username("user2").isSubValid(true).subExpiredAt(currentDate).build();
 
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user1));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(user2));
 
+        userService.updateSubscriptions(Arrays.asList(request1, request2));
+
+        verify(userRepository, times(2)).save(any(User.class));
+
+        // 변경된 구독 정보를 확인
+        assertTrue(user1.getIsSubValid());
+        assertEquals(convertToLocalDate(addDays(currentDate, 30)), convertToLocalDate(user1.getSubExpiredAt()));
+        assertFalse(user2.getIsSubValid());
+        assertEquals(convertToLocalDate(currentDate), convertToLocalDate(user2.getSubExpiredAt()));
+    }
+
+    @Test
+    @DisplayName("사용자를 찾을 수 없음으로 인한 구독 정보 갱신 실패 테스트")
+    public void testUpdateSubscriptions_UserNotFound() {
+        SubscriptionUpdateRequest request1 = new SubscriptionUpdateRequest(1L, true, addDays(new Date(), 30));
+
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            userService.updateSubscriptions(Arrays.asList(request1));
+        });
+
+        assertEquals("User not found with id: 1", exception.getMessage());
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    private Date addDays(Date date, int days) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.add(Calendar.DAY_OF_YEAR, days);
+        return calendar.getTime();
+    }
+
+    private LocalDate convertToLocalDate(Date date) {
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+    }
 }
 
 
