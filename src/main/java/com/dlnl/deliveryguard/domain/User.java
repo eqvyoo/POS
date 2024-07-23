@@ -24,9 +24,9 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    @Column(unique = true, name = "username")
     private String username;
-
+    @Column(name = "password")
     private String password;
 
     @Column(name = "refresh_token")
@@ -63,5 +63,8 @@ public class User {
 
     public void updateIsSubValid(Boolean isSubValid){
         this.isSubValid = isSubValid;
+    }
+    public void updatePassword(String password){
+        this.password = password;
     }
 }

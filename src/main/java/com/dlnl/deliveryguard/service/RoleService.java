@@ -23,13 +23,8 @@ public class RoleService {
         }
     }
 
-    public Role findByName(String name) {
-        Optional<Role> role = roleRepository.findByName(name);
-        if (role.isPresent())
-            return role.get();
-        else {
-            throw new RuntimeException("Role not found with Role name: " + name);
-        }
+    public Optional<Role> findByName(String name) {
+        return roleRepository.findByName(name);
     }
     public Role createRole(String name) {
         Role role = Role.builder().name(name).build();

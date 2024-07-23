@@ -1,4 +1,4 @@
-package com.dlnl.deliveryguard.web;
+package com.dlnl.deliveryguard.web.DTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

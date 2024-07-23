@@ -7,6 +7,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Component;
 
 import java.util.Base64;
@@ -59,8 +60,7 @@ public class JwtUtil {
             Jwts.parser().setSigningKey(encodedSecretKey).parseClaimsJws(token);
             return true;
         }else {
-            log.error("유효하지 않은 토큰입니다.");
-            return false;
+            throw new BadCredentialsException("유효하지 않은 토큰입니다.");
         }
     }
     private Boolean isTokenExpired(String token) {

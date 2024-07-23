@@ -7,15 +7,13 @@ import com.dlnl.deliveryguard.repository.UserRepository;
 import com.dlnl.deliveryguard.service.RoleService;
 import com.dlnl.deliveryguard.service.UserRoleService;
 import com.dlnl.deliveryguard.service.UserService;
-import com.dlnl.deliveryguard.web.*;
+import com.dlnl.deliveryguard.web.DTO.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -54,28 +52,30 @@ public class UserServiceTest {
     public void setUp() {
         MockitoAnnotations.openMocks(this);
     }
-
     @Test
-    @DisplayName("관리자의 사용자 회원가입 성공 테스트")
-    public void registerNewUser_ShouldRegisterUser() {
+    @DisplayName("새 사용자 등록 성공 테스트")
+    public void registerNewUser_ShouldRegisterUser() throws Exception {
         UserRegistrationRequest request = new UserRegistrationRequest();
         request.setUsername("testuser");
         request.setPassword("password");
 
+        String encodedPassword = "encodedPassword";
+        String refreshToken = "refreshToken";
+
         User user = User.builder()
                 .username(request.getUsername())
-                .password("encodedPassword")
+                .password(encodedPassword)
                 .isSubValid(true)
                 .subExpiredAt(Date.from(LocalDate.now().plusDays(30).atStartOfDay(ZoneId.systemDefault()).toInstant()))
                 .build();
 
         Role role = Role.builder().name("USER").build();
-        String expectedRefreshToken = "testRefreshToken";
 
-        when(passwordEncoder.encode(request.getPassword())).thenReturn("encodedPassword");
+        when(userRepository.findByUsername(request.getUsername())).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(request.getPassword())).thenReturn(encodedPassword);
         when(userRepository.save(any(User.class))).thenReturn(user);
-        when(roleService.findByName("USER")).thenReturn(role);
-        when(jwtUtil.generateRefreshToken(any(Long.class))).thenReturn(expectedRefreshToken);
+        when(jwtUtil.generateRefreshToken(any(Long.class))).thenReturn(refreshToken);
+        when(roleService.findByName("USER")).thenReturn(Optional.of(role));
 
         String response = userService.registerNewUser(request);
 
@@ -83,42 +83,65 @@ public class UserServiceTest {
         verify(userRepository, times(2)).save(any(User.class));
         verify(userRoleService, times(1)).saveUserRole(any(User.class), any(Role.class));
     }
+
     @Test
-    @DisplayName("테스트용 관리자 회원가입 성공 테스트")
-    public void registerAdminUser_ShouldRegisterAdmin() {
-        String username = "admin";
-        String password = "password";
-        String encodedPassword = "encodedPassword";
-        String refreshToken = "refreshToken";
+    @DisplayName("사용자 등록 실패 테스트 - 중복된 아이디")
+    public void registerNewUser_ShouldThrowExceptionWhenUsernameExists() {
+        UserRegistrationRequest request = new UserRegistrationRequest();
+        request.setUsername("testuser");
+        request.setPassword("password");
 
-        User user = User.builder()
-                .username(username)
-                .password(encodedPassword)
-                .isSubValid(true)
-                .subExpiredAt(Date.from(LocalDate.now().plusDays(30).atStartOfDay(ZoneId.systemDefault()).toInstant()))
-                .build();
+        when(userRepository.findByUsername(request.getUsername())).thenReturn(Optional.of(new User()));
 
-        Role adminRole = Role.builder().name("ADMIN").build();
+        Exception exception = assertThrows(Exception.class, () -> {
+            userService.registerNewUser(request);
+        });
 
-        when(passwordEncoder.encode(password)).thenReturn(encodedPassword);
-        when(userRepository.save(any(User.class))).thenReturn(user);
-        when(jwtUtil.generateRefreshToken(any(Long.class))).thenReturn(refreshToken);
-        when(roleService.findByName("ADMIN")).thenReturn(adminRole);
-
-        String response = userService.registerAdminUser(username, password);
-
-        assertEquals("관리자 admin 등록 완료", response);
-        verify(userRepository, times(2)).save(any(User.class));
-        verify(userRoleService, times(1)).saveUserRole(any(User.class), any(Role.class));
+        assertEquals("해당 아이디는 사용하실 수 없습니다.", exception.getMessage());
+        verify(userRepository, never()).save(any(User.class));
+        verify(userRoleService, never()).saveUserRole(any(User.class), any(Role.class));
     }
 
+
+@Test
+@DisplayName("테스트용 관리자 회원가입 성공 테스트")
+public void registerAdminUser_ShouldRegisterAdmin() throws Exception {
+    String username = "admin";
+    String password = "password";
+    String encodedPassword = "encodedPassword";
+    String refreshToken = "refreshToken";
+
+    User user = User.builder()
+            .username(username)
+            .password(encodedPassword)
+            .isSubValid(true)
+            .subExpiredAt(Date.from(LocalDate.now().plusDays(30).atStartOfDay(ZoneId.systemDefault()).toInstant()))
+            .build();
+
+    Role adminRole = Role.builder().name("ADMIN").build();
+
+    when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+    when(passwordEncoder.encode(password)).thenReturn(encodedPassword);
+    when(userRepository.save(any(User.class))).thenReturn(user);
+    when(jwtUtil.generateRefreshToken(any(Long.class))).thenReturn(refreshToken);
+    when(roleService.findByName("ADMIN")).thenReturn(Optional.of(adminRole));
+
+    String response = userService.registerAdminUser(username, password);
+
+    assertEquals("관리자 admin 등록 완료", response);
+    verify(userRepository, times(2)).save(any(User.class));
+    verify(userRoleService, times(1)).saveUserRole(any(User.class), any(Role.class));
+}
+
+
+
     @Test
-    @DisplayName("로그인 성공 테스트")
-    public void testAuthenticateUser_Success() throws Exception {
+    @DisplayName("사용자 로그인 성공 테스트")
+    public void loginUser_ShouldAuthenticateUser() throws Exception {
         String username = "testuser";
         String password = "password";
-        Long userId = 1L;
         String encodedPassword = "encodedPassword";
+        Long userId = 1L;
         String accessToken = "accessToken";
         String refreshToken = "refreshToken";
 
@@ -126,6 +149,7 @@ public class UserServiceTest {
                 .id(userId)
                 .username(username)
                 .password(encodedPassword)
+                .refreshToken(refreshToken)
                 .build();
 
         LoginRequest loginRequest = new LoginRequest();
@@ -135,8 +159,6 @@ public class UserServiceTest {
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(password, encodedPassword)).thenReturn(true);
         when(jwtUtil.generateAccessToken(userId)).thenReturn(accessToken);
-        when(jwtUtil.generateRefreshToken(userId)).thenReturn(refreshToken);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         LoginResponse loginResponse = userService.authenticateUser(loginRequest);
 
@@ -147,43 +169,16 @@ public class UserServiceTest {
         verify(userRepository, times(1)).findByUsername(username);
         verify(passwordEncoder, times(1)).matches(password, encodedPassword);
         verify(jwtUtil, times(1)).generateAccessToken(userId);
-        verify(jwtUtil, times(1)).generateRefreshToken(userId);
-        verify(userRepository, times(1)).save(any(User.class));
     }
 
     @Test
-    @DisplayName("유저 없는 로그인 실패 테스트")
-    public void testAuthenticateUser_UserNotFound() {
+    @DisplayName("사용자 로그인 실패 테스트 - 잘못된 비밀번호")
+    public void loginUser_ShouldThrowExceptionForInvalidPassword() {
         String username = "testuser";
         String password = "password";
-
-        LoginRequest loginRequest = new LoginRequest();
-        loginRequest.setUsername(username);
-        loginRequest.setPassword(password);
-
-        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
-
-        Exception exception = assertThrows(RuntimeException.class, () -> {
-            userService.authenticateUser(loginRequest);
-        });
-
-        assertEquals(username + " User not found", exception.getMessage());
-        verify(userRepository, times(1)).findByUsername(username);
-        verify(passwordEncoder, never()).matches(anyString(), anyString());
-        verify(jwtUtil, never()).generateAccessToken(anyLong());
-        verify(jwtUtil, never()).generateRefreshToken(anyLong());
-    }
-
-    @Test
-    @DisplayName("비밀번호 틀린 로그인 실패 테스트")
-    public void testAuthenticateUser_InvalidPassword() {
-        String username = "testuser";
-        String password = "password";
-        Long userId = 1L;
         String encodedPassword = "encodedPassword";
 
         User user = User.builder()
-                .id(userId)
                 .username(username)
                 .password(encodedPassword)
                 .build();
@@ -200,170 +195,43 @@ public class UserServiceTest {
         });
 
         assertEquals("아이디 또는 비밀번호가 잘못 되었습니다. 아이디와 비밀번호를 정확히 입력해 주세요.", exception.getMessage());
+
         verify(userRepository, times(1)).findByUsername(username);
         verify(passwordEncoder, times(1)).matches(password, encodedPassword);
         verify(jwtUtil, never()).generateAccessToken(anyLong());
-        verify(jwtUtil, never()).generateRefreshToken(anyLong());
-    }
-    @Test
-    @DisplayName("refresh token으로 Login 성공 테스트")
-    public void testLoginWithRefreshToken_Success() {
-        String refreshToken = "validRefreshToken";
-        Long userId = 1L;
-        String newAccessToken = "newAccessToken";
-        String newRefreshToken = "newRefreshToken";
-
-        User user = User.builder()
-                .id(userId)
-                .username("testuser")
-                .password("encodedPassword")
-                .build();
-
-        when(jwtUtil.validateToken(refreshToken)).thenReturn(true);
-        when(jwtUtil.getIdFromToken(refreshToken)).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(jwtUtil.generateAccessToken(userId)).thenReturn(newAccessToken);
-        when(jwtUtil.generateRefreshToken(userId)).thenReturn(newRefreshToken);
-
-        LoginResponse loginResponse = userService.loginWithRefreshToken(refreshToken);
-
-        assertNotNull(loginResponse);
-        assertEquals(newAccessToken, loginResponse.getAccessToken());
-        assertEquals(newRefreshToken, loginResponse.getRefreshToken());  // 새로운 refreshToken 검증
-
-        verify(jwtUtil, times(1)).validateToken(refreshToken);
-        verify(jwtUtil, times(1)).getIdFromToken(refreshToken);
-        verify(userRepository, times(1)).findById(userId);
-        verify(jwtUtil, times(1)).generateAccessToken(userId);
-        verify(jwtUtil, times(1)).generateRefreshToken(userId);
-        verify(userRepository, times(1)).save(user);
     }
 
     @Test
-    @DisplayName("Invalid refresh token으로 Login 실패 테스트")
-    public void testLoginWithRefreshToken_InvalidToken() {
-        String refreshToken = "invalidRefreshToken";
+    @DisplayName("사용자 로그인 실패 테스트 - 사용자 없음")
+    public void loginUser_ShouldThrowExceptionForUserNotFound() {
+        String username = "testuser";
+        String password = "password";
 
-        when(jwtUtil.validateToken(refreshToken)).thenReturn(false);
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setUsername(username);
+        loginRequest.setPassword(password);
 
-        BadCredentialsException exception = assertThrows(BadCredentialsException.class, () -> {
-            userService.loginWithRefreshToken(refreshToken);
+        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            userService.authenticateUser(loginRequest);
         });
 
-        assertEquals("Invalid Refresh Token", exception.getMessage());
+        assertEquals(username + " 해당되는 아이디가 없습니다.", exception.getMessage());
 
-        verify(jwtUtil, times(1)).validateToken(refreshToken);
-        verify(jwtUtil, never()).getIdFromToken(anyString());
-        verify(userRepository, never()).findById(anyLong());
+        verify(userRepository, times(1)).findByUsername(username);
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
         verify(jwtUtil, never()).generateAccessToken(anyLong());
-        verify(jwtUtil, never()).generateRefreshToken(anyLong());
-        verify(userRepository, never()).save(any(User.class));
     }
 
-    @Test
-    @DisplayName("User not found로 Login 실패 테스트")
-    public void testLoginWithRefreshToken_UserNotFound() {
-        String refreshToken = "validRefreshToken";
-        Long userId = 1L;
-
-        when(jwtUtil.validateToken(refreshToken)).thenReturn(true);
-        when(jwtUtil.getIdFromToken(refreshToken)).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
-
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            userService.loginWithRefreshToken(refreshToken);
-        });
-
-        assertEquals("User not found with id: " + userId, exception.getMessage());
-
-        verify(jwtUtil, times(1)).validateToken(refreshToken);
-        verify(jwtUtil, times(1)).getIdFromToken(refreshToken);
-        verify(userRepository, times(1)).findById(userId);
-        verify(jwtUtil, never()).generateAccessToken(anyLong());
-        verify(jwtUtil, never()).generateRefreshToken(anyLong());
-        verify(userRepository, never()).save(any(User.class));
-    }
-
-
-    @Test
-    @DisplayName("refresh token으로 토큰 정보 갱신 성공 테스트")
-    public void testRefreshAccessToken_Success() {
-        String refreshToken = "validRefreshToken";
-        Long userId = 1L;
-        String newAccessToken = "newAccessToken";
-
-        User user = User.builder()
-                .id(userId)
-                .username("testuser")
-                .password("encodedPassword")
-                .build();
-
-        when(jwtUtil.validateToken(refreshToken)).thenReturn(true);
-        when(jwtUtil.getIdFromToken(refreshToken)).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(jwtUtil.generateAccessToken(userId)).thenReturn(newAccessToken);
-
-        LoginResponse loginResponse = userService.refreshAccessToken(refreshToken);
-
-        assertNotNull(loginResponse);
-        assertEquals(newAccessToken, loginResponse.getAccessToken());
-        assertEquals(refreshToken, loginResponse.getRefreshToken());
-
-        verify(jwtUtil, times(1)).validateToken(refreshToken);
-        verify(jwtUtil, times(1)).getIdFromToken(refreshToken);
-        verify(userRepository, times(1)).findById(userId);
-        verify(jwtUtil, times(1)).generateAccessToken(userId);
-        verify(userRepository, times(1)).save(user);
-    }
-
-    @Test
-    @DisplayName("유효하지 않은 refresh token으로 토큰 정보 갱신 실패 테스트")
-    public void testRefreshAccessToken_InvalidToken() {
-        String refreshToken = "invalidRefreshToken";
-
-        when(jwtUtil.validateToken(refreshToken)).thenReturn(false);
-
-        BadCredentialsException exception = assertThrows(BadCredentialsException.class, () -> {
-            userService.refreshAccessToken(refreshToken);
-        });
-
-        assertEquals("Invalid Refresh Token", exception.getMessage());
-
-        verify(jwtUtil, times(1)).validateToken(refreshToken);
-        verify(jwtUtil, never()).getIdFromToken(anyString());
-        verify(userRepository, never()).findById(anyLong());
-        verify(jwtUtil, never()).generateAccessToken(anyLong());
-        verify(userRepository, never()).save(any(User.class));
-    }
-
-    @Test
-    @DisplayName("refresh token로 user 찾기 실패로 토큰 정보 갱신 실패 테스트")
-    public void testRefreshAccessToken_UserNotFound() {
-        String refreshToken = "validRefreshToken";
-        Long userId = 1L;
-
-        when(jwtUtil.validateToken(refreshToken)).thenReturn(true);
-        when(jwtUtil.getIdFromToken(refreshToken)).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
-
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            userService.refreshAccessToken(refreshToken);
-        });
-
-        assertEquals("User not found with id: " + userId, exception.getMessage());
-
-        verify(jwtUtil, times(1)).validateToken(refreshToken);
-        verify(jwtUtil, times(1)).getIdFromToken(refreshToken);
-        verify(userRepository, times(1)).findById(userId);
-        verify(jwtUtil, never()).generateAccessToken(anyLong());
-        verify(userRepository, never()).save(any(User.class));
-    }
 
     @Test
     @DisplayName("구독 정보 갱신 성공 테스트")
-    public void testUpdateSubscriptions_Success() {
+    public void updateSubscriptions_ShouldUpdateSubscriptions() {
         Date currentDate = new Date();
-        SubscriptionUpdateRequest request1 = new SubscriptionUpdateRequest(1L, true, addDays(currentDate, 30));
+        Date newExpirationDate = addDays(currentDate, 30);
+
+        SubscriptionUpdateRequest request1 = new SubscriptionUpdateRequest(1L, true, newExpirationDate);
         SubscriptionUpdateRequest request2 = new SubscriptionUpdateRequest(2L, false, new Date());
 
         User user1 = User.builder().id(1L).username("user1").isSubValid(true).subExpiredAt(currentDate).build();
@@ -378,14 +246,14 @@ public class UserServiceTest {
 
         // 변경된 구독 정보를 확인
         assertTrue(user1.getIsSubValid());
-        assertEquals(convertToLocalDate(addDays(currentDate, 30)), convertToLocalDate(user1.getSubExpiredAt()));
+        assertEquals(convertToLocalDate(newExpirationDate), convertToLocalDate(user1.getSubExpiredAt()));
         assertFalse(user2.getIsSubValid());
         assertEquals(convertToLocalDate(currentDate), convertToLocalDate(user2.getSubExpiredAt()));
     }
 
     @Test
-    @DisplayName("사용자를 찾을 수 없음으로 인한 구독 정보 갱신 실패 테스트")
-    public void testUpdateSubscriptions_UserNotFound() {
+    @DisplayName("구독 정보 갱신 실패 테스트 - 사용자를 찾을 수 없음")
+    public void updateSubscriptions_ShouldThrowExceptionWhenUserNotFound() {
         SubscriptionUpdateRequest request1 = new SubscriptionUpdateRequest(1L, true, addDays(new Date(), 30));
 
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
@@ -394,7 +262,7 @@ public class UserServiceTest {
             userService.updateSubscriptions(Arrays.asList(request1));
         });
 
-        assertEquals("User not found with id: 1", exception.getMessage());
+        assertEquals("1번 사용자는 존재하지 않습니다.", exception.getMessage());
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -410,8 +278,9 @@ public class UserServiceTest {
     }
     @Test
     @DisplayName("사용자 정보 조회 성공 테스트")
-    public void testGetUserInfo_Success() {
-        String token = "validToken";
+    public void getUserInfo_ShouldReturnUserInfo() {
+        String token = "Bearer validToken";
+        String jwtToken = "validToken";
         Long userId = 1L;
 
         User user = User.builder()
@@ -421,8 +290,8 @@ public class UserServiceTest {
                 .subExpiredAt(new Date())
                 .build();
 
-        when(jwtUtil.validateToken(token)).thenReturn(true);
-        when(jwtUtil.getIdFromToken(token)).thenReturn(userId);
+        when(jwtUtil.validateToken(jwtToken)).thenReturn(true);
+        when(jwtUtil.getIdFromToken(jwtToken)).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         UserInfoResponse userInfoResponse = userService.getUserInfo(token);
@@ -433,50 +302,98 @@ public class UserServiceTest {
         assertEquals("참", userInfoResponse.getIsvalid());
         assertEquals(user.getSubExpiredAt(), userInfoResponse.getSubExpiredAt());
 
-        verify(jwtUtil, times(1)).validateToken(token);
-        verify(jwtUtil, times(1)).getIdFromToken(token);
+        verify(jwtUtil, times(1)).validateToken(jwtToken);
+        verify(jwtUtil, times(1)).getIdFromToken(jwtToken);
         verify(userRepository, times(1)).findById(userId);
     }
 
     @Test
-    @DisplayName("유효하지 않은 토큰으로 사용자 정보 조회 실패 테스트")
-    public void testGetUserInfo_InvalidToken() {
-        String token = "invalidToken";
-
-        when(jwtUtil.validateToken(token)).thenReturn(false);
-
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            userService.getUserInfo(token);
-        });
-
-        assertEquals("Invalid JWT token", exception.getMessage());
-
-        verify(jwtUtil, times(1)).validateToken(token);
-        verify(jwtUtil, never()).getIdFromToken(anyString());
-        verify(userRepository, never()).findById(anyLong());
-    }
-
-    @Test
-    @DisplayName("존재하지 않는 사용자로 정보 조회 실패 테스트")
-    public void testGetUserInfo_UserNotFound() {
-        String token = "validToken";
+    @DisplayName("사용자 정보 조회 실패 테스트 - 사용자 없음")
+    public void getUserInfo_ShouldThrowExceptionWhenUserNotFound() {
+        String token = "Bearer validToken";
+        String jwtToken = "validToken";
         Long userId = 1L;
 
-        when(jwtUtil.validateToken(token)).thenReturn(true);
-        when(jwtUtil.getIdFromToken(token)).thenReturn(userId);
+        when(jwtUtil.validateToken(jwtToken)).thenReturn(true);
+        when(jwtUtil.getIdFromToken(jwtToken)).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             userService.getUserInfo(token);
         });
 
-        assertEquals("User not found with id: " + userId, exception.getMessage());
+        assertEquals(userId + "번 사용자는 존재하지 않습니다.", exception.getMessage());
 
-        verify(jwtUtil, times(1)).validateToken(token);
-        verify(jwtUtil, times(1)).getIdFromToken(token);
+        verify(jwtUtil, times(1)).validateToken(jwtToken);
+        verify(jwtUtil, times(1)).getIdFromToken(jwtToken);
         verify(userRepository, times(1)).findById(userId);
     }
+    @Test
+    @DisplayName("비밀번호 변경 성공 테스트")
+    public void updatePassword_ShouldUpdatePassword() {
+        String token = "Bearer validToken";
+        String jwtToken = "validToken";
+        String username = "testuser";
+        Long userId = 1L;
+        String newPassword = "newPassword";
+        String encodedPassword = "encodedPassword";
+
+        User user = User.builder()
+                .id(userId)
+                .username(username)
+                .password("oldPassword")
+                .build();
+
+        PasswordUpdateRequest request = new PasswordUpdateRequest();
+        request.setUsername(username);
+        request.setNewPassword(newPassword);
+
+        when(jwtUtil.validateToken(jwtToken)).thenReturn(true);
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(newPassword)).thenReturn(encodedPassword);
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        PasswordUpdateResponse response = userService.updatePassword(token, request);
+
+        assertNotNull(response);
+        assertEquals(userId, response.getId());
+        assertEquals(username, response.getUsername());
+        assertEquals(encodedPassword, user.getPassword());
+
+        verify(jwtUtil, times(1)).validateToken(jwtToken);
+        verify(userRepository, times(1)).findByUsername(username);
+        verify(passwordEncoder, times(1)).encode(newPassword);
+        verify(userRepository, times(1)).save(user);
+    }
+
+    @Test
+    @DisplayName("비밀번호 변경 실패 테스트 - 사용자 없음")
+    public void updatePassword_ShouldThrowExceptionWhenUserNotFound() {
+        String token = "Bearer validToken";
+        String jwtToken = "validToken";
+        String username = "testuser";
+        String newPassword = "newPassword";
+
+        PasswordUpdateRequest request = new PasswordUpdateRequest();
+        request.setUsername(username);
+        request.setNewPassword(newPassword);
+
+        when(jwtUtil.validateToken(jwtToken)).thenReturn(true);
+        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            userService.updatePassword(token, request);
+        });
+
+        assertEquals(username + " 해당되는 아이디가 없습니다.", exception.getMessage());
+
+        verify(jwtUtil, times(1)).validateToken(jwtToken);
+        verify(userRepository, times(1)).findByUsername(username);
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(userRepository, never()).save(any(User.class));
+    }
 }
+
 
 
 

@@ -1,7 +1,9 @@
-package com.dlnl.deliveryguard.web;
+package com.dlnl.deliveryguard.web.Controller;
 
 import com.dlnl.deliveryguard.service.UserService;
+import com.dlnl.deliveryguard.web.DTO.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -17,12 +19,23 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/register")
     public ResponseEntity<String> registerUser(@RequestBody UserRegistrationRequest request) {
-        String responseMessage = userService.registerNewUser(request);
-        return ResponseEntity.ok(responseMessage);
+        try {
+            String responseMessage = userService.registerNewUser(request);
+            return ResponseEntity.ok(responseMessage);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
     @PostMapping("/admin")
-    public String createAdminUser(@RequestBody UserRegistrationRequest request) {
-        return userService.registerAdminUser(request.getUsername(), request.getPassword());
+    public ResponseEntity<?>  createAdminUser(@RequestBody UserRegistrationRequest request) {
+        try {
+            String response = userService.registerAdminUser(request.getUsername(), request.getPassword());
+            return ResponseEntity.ok(response);
+        }catch (BadCredentialsException e) {
+            return ResponseEntity.status(401).body("Invalid username or password");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
@@ -32,24 +45,15 @@ public class UserController {
         } catch (BadCredentialsException e) {
             return ResponseEntity.status(401).body("Invalid username or password");
         } catch (Exception e) {
-            throw new RuntimeException("유효하지 않은 접근입니다", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
-    @PostMapping("/token-login")
-    public ResponseEntity<?> loginWithRefreshToken(@RequestBody TokenRequest tokenRequest) {
+    @PostMapping("/reissue-token")
+    public ResponseEntity<?> refreshAccessToken(@RequestBody ReissueAccessTokenRequest reissueAccessTokenRequest) {
         try {
-            LoginResponse loginResponse = userService.loginWithRefreshToken(tokenRequest.getRefreshToken());
-            return ResponseEntity.ok(loginResponse);
-        } catch (Exception e) {
-            return ResponseEntity.status(401).body(e.getMessage());
-        }
-    }
-    @PostMapping("/refresh-token")
-    public ResponseEntity<?> refreshAccessToken(@RequestBody TokenRequest tokenRequest) {
-        try {
-            LoginResponse loginResponse = userService.refreshAccessToken(tokenRequest.getRefreshToken());
-            return ResponseEntity.ok(loginResponse);
+            ReissueAccessTokenResponse response = userService.reissueAccessToken(reissueAccessTokenRequest);
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(401).body(e.getMessage());
         }
@@ -67,9 +71,19 @@ public class UserController {
     @GetMapping("/info")
     public ResponseEntity<?> getUserInfo(@RequestHeader("Authorization") String token) {
         try {
-            String jwtToken = token.substring(7); // "Bearer " 부분 제거
-            UserInfoResponse userInfoResponse = userService.getUserInfo(jwtToken);
+            UserInfoResponse userInfoResponse = userService.getUserInfo(token);
             return ResponseEntity.ok(userInfoResponse);
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(e.getMessage());
+        }
+    }
+
+    @PutMapping("/update-password")
+    public ResponseEntity<?> updatePassword(@RequestHeader("Authorization") String token,
+                                            @RequestBody PasswordUpdateRequest request) {
+        try {
+            PasswordUpdateResponse passwordUpdateResponse= userService.updatePassword(token, request);
+            return ResponseEntity.ok(passwordUpdateResponse);
         } catch (Exception e) {
             return ResponseEntity.status(400).body(e.getMessage());
         }
