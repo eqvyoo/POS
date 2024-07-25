@@ -129,13 +129,14 @@ public class UserService {
     @Transactional
     public void updateSubscriptions(List<SubscriptionUpdateRequest> requests) {
         for (SubscriptionUpdateRequest request : requests) {
-            User user = findUserById(request.getUserId());
+            User user = findByUsername(request.getUsername());
             user.updateUpdatedAt(LocalDateTime.now());
             if (request.getIsSubValid() != null && !request.getIsSubValid()) {
                 user.updateSubExpiredAt(new Date());
-                user.updateIsSubValid(false);
+                user.updateIsSubValid(request.getIsSubValid());
             } else {
                 user.updateSubExpiredAt(request.getSubExpiredAt());
+                user.updateIsSubValid(request.getIsSubValid());
             }
             userRepository.save(user);
         }

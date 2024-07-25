@@ -12,7 +12,7 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SubscriptionUpdateRequest {
-    private Long userId;
+    private String username;
     private Boolean isSubValid;
     private Date subExpiredAt;
 }
