@@ -7,5 +7,5 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ReissueAccessTokenRequest {
-    private String accessToken;
+    private String refreshToken;
 }

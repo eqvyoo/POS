@@ -114,9 +114,9 @@ public class UserService {
 
     @Transactional
     public ReissueAccessTokenResponse reissueAccessToken(String token) {
-        String accessToken = token.substring(7);
-        jwtUtil.validateToken(accessToken);
-        Long userId = jwtUtil.getIdFromToken(accessToken);
+        String refreshToken = token.substring(7);
+        jwtUtil.validateRefreshToken(refreshToken);
+        Long userId = jwtUtil.getIdFromToken(refreshToken);
         User user = findUserById(userId);
         String newAccessToken = jwtUtil.generateAccessToken(userId);
         user.updateUpdatedAt(LocalDateTime.now());

@@ -63,6 +63,19 @@ public class JwtUtil {
             throw new BadCredentialsException("유효하지 않은 토큰입니다.");
         }
     }
+    public boolean validateRefreshToken(String token) {
+        if (!isTokenExpired(token)) {
+            Claims claims = Jwts.parser().setSigningKey(encodedSecretKey).parseClaimsJws(token).getBody();
+            String tokenType = claims.get("tokenType", String.class);
+            if ("refresh".equals(tokenType)) {
+                return true;
+            } else {
+                throw new BadCredentialsException("유효하지 않은 토큰입니다.");
+            }
+        } else {
+            throw new BadCredentialsException("유효하지 않은 토큰입니다.");
+        }
+    }
     private Boolean isTokenExpired(String token) {
         return extractAllClaims(token).getExpiration().before(new Date());
     }
