@@ -131,13 +131,8 @@ public class UserService {
         for (SubscriptionUpdateRequest request : requests) {
             User user = findByUsername(request.getUsername());
             user.updateUpdatedAt(LocalDateTime.now());
-            if (request.getIsSubValid() != null && !request.getIsSubValid()) {
-                user.updateSubExpiredAt(new Date());
-                user.updateIsSubValid(request.getIsSubValid());
-            } else {
-                user.updateSubExpiredAt(request.getSubExpiredAt());
-                user.updateIsSubValid(request.getIsSubValid());
-            }
+            user.updateSubExpiredAt(request.getSubExpiredAt());
+            user.updateIsSubValid(request.getIsSubValid());
             userRepository.save(user);
         }
     }

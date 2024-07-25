@@ -232,7 +232,7 @@ public void registerAdminUser_ShouldRegisterAdmin() throws Exception {
         Date newExpirationDate = addDays(currentDate, 30);
 
         SubscriptionUpdateRequest request1 = new SubscriptionUpdateRequest("user1", true, newExpirationDate);
-        SubscriptionUpdateRequest request2 = new SubscriptionUpdateRequest("user2", false, new Date());
+        SubscriptionUpdateRequest request2 = new SubscriptionUpdateRequest("user2", false, newExpirationDate);
 
         User user1 = User.builder().id(1L).username("user1").isSubValid(true).subExpiredAt(currentDate).build();
         User user2 = User.builder().id(2L).username("user2").isSubValid(true).subExpiredAt(currentDate).build();
@@ -248,7 +248,7 @@ public void registerAdminUser_ShouldRegisterAdmin() throws Exception {
         assertTrue(user1.getIsSubValid());
         assertEquals(convertToLocalDate(newExpirationDate), convertToLocalDate(user1.getSubExpiredAt()));
         assertFalse(user2.getIsSubValid());
-        assertEquals(convertToLocalDate(currentDate), convertToLocalDate(user2.getSubExpiredAt()));
+        assertEquals(convertToLocalDate(newExpirationDate), convertToLocalDate(user2.getSubExpiredAt()));
     }
 
     @Test
