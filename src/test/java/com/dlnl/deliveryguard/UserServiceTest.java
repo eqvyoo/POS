@@ -231,14 +231,14 @@ public void registerAdminUser_ShouldRegisterAdmin() throws Exception {
         Date currentDate = new Date();
         Date newExpirationDate = addDays(currentDate, 30);
 
-        SubscriptionUpdateRequest request1 = new SubscriptionUpdateRequest(1L, true, newExpirationDate);
-        SubscriptionUpdateRequest request2 = new SubscriptionUpdateRequest(2L, false, new Date());
+        SubscriptionUpdateRequest request1 = new SubscriptionUpdateRequest("user1", true, newExpirationDate);
+        SubscriptionUpdateRequest request2 = new SubscriptionUpdateRequest("user2", false, new Date());
 
         User user1 = User.builder().id(1L).username("user1").isSubValid(true).subExpiredAt(currentDate).build();
         User user2 = User.builder().id(2L).username("user2").isSubValid(true).subExpiredAt(currentDate).build();
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user1));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(user2));
+        when(userRepository.findByUsername("user1")).thenReturn(Optional.of(user1));
+        when(userRepository.findByUsername("user2")).thenReturn(Optional.of(user2));
 
         userService.updateSubscriptions(Arrays.asList(request1, request2));
 
@@ -254,15 +254,15 @@ public void registerAdminUser_ShouldRegisterAdmin() throws Exception {
     @Test
     @DisplayName("구독 정보 갱신 실패 테스트 - 사용자를 찾을 수 없음")
     public void updateSubscriptions_ShouldThrowExceptionWhenUserNotFound() {
-        SubscriptionUpdateRequest request1 = new SubscriptionUpdateRequest(1L, true, addDays(new Date(), 30));
+        SubscriptionUpdateRequest request1 = new SubscriptionUpdateRequest("user1", true, addDays(new Date(), 30));
 
-        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+        when(userRepository.findByUsername("user1")).thenReturn(Optional.empty());
 
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             userService.updateSubscriptions(Arrays.asList(request1));
         });
 
-        assertEquals("1번 사용자는 존재하지 않습니다.", exception.getMessage());
+        assertEquals("user1 해당되는 아이디가 없습니다.", exception.getMessage());
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -406,7 +406,7 @@ public void registerAdminUser_ShouldRegisterAdmin() throws Exception {
                 .username("testuser")
                 .build();
 
-        when(jwtUtil.validateToken(jwtToken)).thenReturn(true);
+        when(jwtUtil.validateRefreshToken(jwtToken)).thenReturn(true);
         when(jwtUtil.getIdFromToken(jwtToken)).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(jwtUtil.generateAccessToken(userId)).thenReturn(newAccessToken);
@@ -417,7 +417,7 @@ public void registerAdminUser_ShouldRegisterAdmin() throws Exception {
         assertNotNull(response);
         assertEquals(newAccessToken, response.getAccessToken());
 
-        verify(jwtUtil, times(1)).validateToken(jwtToken);
+        verify(jwtUtil, times(1)).validateRefreshToken(jwtToken);
         verify(jwtUtil, times(1)).getIdFromToken(jwtToken);
         verify(userRepository, times(1)).findById(userId);
         verify(jwtUtil, times(1)).generateAccessToken(userId);
@@ -431,7 +431,7 @@ public void registerAdminUser_ShouldRegisterAdmin() throws Exception {
         String jwtToken = "validToken";
         Long userId = 1L;
 
-        when(jwtUtil.validateToken(jwtToken)).thenReturn(true);
+        when(jwtUtil.validateRefreshToken(jwtToken)).thenReturn(true);
         when(jwtUtil.getIdFromToken(jwtToken)).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
@@ -441,7 +441,7 @@ public void registerAdminUser_ShouldRegisterAdmin() throws Exception {
 
         assertEquals(userId + "번 사용자는 존재하지 않습니다.", exception.getMessage());
 
-        verify(jwtUtil, times(1)).validateToken(jwtToken);
+        verify(jwtUtil, times(1)).validateRefreshToken(jwtToken);
         verify(jwtUtil, times(1)).getIdFromToken(jwtToken);
         verify(userRepository, times(1)).findById(userId);
         verify(jwtUtil, never()).generateAccessToken(userId);
