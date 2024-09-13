@@ -20,8 +20,8 @@ spring:
           auto: update
   jwt:
     secret: ${JWT_SECRET}
-    access_exp_time: 7200000 # 2??
-    refresh_exp_time: -1  # ???
+    access_exp_time: ${JWT_ACCESS_TIME}
+    refresh_exp_time: ${JWT_REFRESH_TIME}
 
 logging.level:
   org.springframework.SQL: debug

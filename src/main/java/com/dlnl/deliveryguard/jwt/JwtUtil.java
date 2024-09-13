@@ -46,7 +46,7 @@ public class JwtUtil {
     }
 
     public String generateRefreshToken(Long id) {
-        long expirationTime = refreshExpiration == -1 ? Long.MAX_VALUE : System.currentTimeMillis() + refreshExpiration;
+        long expirationTime = System.currentTimeMillis() + refreshExpiration;
         return Jwts.builder()
                 .claim("id", id)
                 .claim("tokenType", "refresh")

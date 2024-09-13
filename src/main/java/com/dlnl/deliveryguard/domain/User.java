@@ -24,19 +24,32 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(unique = true, name = "username")
-    private String username;
+    @Column(unique = true, name = "login_iD")
+    private String loginID;
+
     @Column(name = "password")
     private String password;
+
+    @Column(name = "user_name")
+    private String userName;
+
+    @Column(name = "phone_number")
+    private String phoneNumber;
+
+    @Column(name = "email")
+    private String email;
+
+    @Column(name = "store_name")
+    private String storeName;
+
+    @Column(name = "store_address")
+    private String storeAddress;
 
     @Column(name = "refresh_token")
     private String refreshToken;
 
-    @Column(name = "is_sub_valid")
-    private Boolean isSubValid;
-
-    @Column(name = "sub_expired_at")
-    private Date subExpiredAt;
+    @Column(name = "access_token")
+    private String accessToken;
 
     @Column(name = "created_at",nullable = false, updatable = false)
     @CreatedDate
@@ -46,23 +59,19 @@ public class User {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "user")
-    private List<UserRole> userRoles;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role;
 
     public void updateRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
     }
+    public void updateAccessToken(String accessToken) {
+        this.accessToken = accessToken;
+    }
 
     public void updateUpdatedAt(LocalDateTime now){
         this.updatedAt = now;
-    }
-
-    public void updateSubExpiredAt(Date subExpiredAt) {
-        this.subExpiredAt = subExpiredAt;
-    }
-
-    public void updateIsSubValid(Boolean isSubValid){
-        this.isSubValid = isSubValid;
     }
     public void updatePassword(String password){
         this.password = password;
