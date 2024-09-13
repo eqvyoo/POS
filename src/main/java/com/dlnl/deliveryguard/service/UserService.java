@@ -72,58 +72,28 @@ public class UserService {
         return password.length() >= 8 && password.matches(".*[A-Za-z].*") && password.matches(".*[0-9].*");
     }
 
+    @Transactional
+    public LoginResponse login(LoginRequest loginRequest) {
+        User user = userRepository.findByLoginID(loginRequest.getLoginID())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
+        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+        }
 
+        String accessToken = jwtUtil.generateAccessToken(user.getId());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId());
 
+        user.updateAccessToken(accessToken);
+        user.updateRefreshToken(refreshToken);
+        user.updateUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
 
-//    public String registerNewUser(UserRegistrationRequest request) throws Exception{
-//        if(userRepository.findByUsername(request.getUsername()).isPresent()){
-//            throw new Exception("해당 아이디는 사용하실 수 없습니다.");
-//        }
-//
-//        User user = User.builder()
-//                .username(request.getUsername())
-//                .password(passwordEncoder.encode(request.getPassword())).build();
-//
-//        user = userRepository.save(user);
-//        String refreshToken = jwtUtil.generateRefreshToken(user.getId());
-//        user.updateRefreshToken(refreshToken);
-//        userRepository.save(user);
-//
-//
-//        return "사용자 " + user.getUsername() + " 등록 완료";
-//
-//    }
-//
-//    @Transactional
-//    public String registerAdminUser(String username, String password) throws Exception{
-//        if(userRepository.findByUsername(username).isPresent()){
-//            throw new Exception("해당 아이디는 사용하실 수 없습니다.");
-//        }
-//        User user = User.builder()
-//                .username(username)
-//                .password(passwordEncoder.encode(password))
-//                .build();
-//
-//        user = userRepository.save(user);
-//        String refreshToken = jwtUtil.generateRefreshToken(user.getId());
-//        user.updateRefreshToken(refreshToken);
-//        userRepository.save(user);
-//
-//
-//        return "관리자 " + user.getUsername() + " 등록 완료";
-//    }
-//
-//    private User findByUsername(String username) {
-//        Optional<User> optionalUser = userRepository.findByUsername(username);
-//        if (optionalUser.isPresent()) {
-//            return optionalUser.get();
-//        } else {
-//            throw new RuntimeException(username + " 해당되는 아이디가 없습니다.");
-//        }
-//    }
-//
-//
+        return LoginResponse.builder()
+                .accessToken(accessToken)
+                .build();
+    }
+
 //    public LoginResponse authenticateUser(LoginRequest loginRequest) throws Exception {
 //        User user = findByUsername(loginRequest.getUsername());
 //        if (user == null || !passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {

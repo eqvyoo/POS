@@ -2,8 +2,11 @@ package com.dlnl.deliveryguard;
 
 
 import com.dlnl.deliveryguard.domain.User;
+import com.dlnl.deliveryguard.jwt.JwtUtil;
 import com.dlnl.deliveryguard.repository.UserRepository;
 import com.dlnl.deliveryguard.service.UserService;
+import com.dlnl.deliveryguard.web.DTO.LoginRequest;
+import com.dlnl.deliveryguard.web.DTO.LoginResponse;
 import com.dlnl.deliveryguard.web.DTO.RegistrationRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,10 +17,12 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-@DisplayName("UserService 회원가입 테스트")
+@DisplayName("UserService 테스트")
 class UserServiceTest {
 
     @Mock
@@ -25,6 +30,9 @@ class UserServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private JwtUtil jwtUtil;
 
     @InjectMocks
     private UserService userService;
@@ -35,7 +43,7 @@ class UserServiceTest {
     }
 
     @Nested
-    @DisplayName("성공 케이스")
+    @DisplayName("회원가입 성공 케이스")
     class SuccessCases {
 
         @Test
@@ -64,7 +72,7 @@ class UserServiceTest {
     }
 
     @Nested
-    @DisplayName("실패 케이스")
+    @DisplayName("회원가입 실패 케이스")
     class FailureCases {
 
         @Test
@@ -78,9 +86,12 @@ class UserServiceTest {
             when(userRepository.existsByLoginID("duplicateuser")).thenReturn(true);
 
             // when & then
-            assertThrows(IllegalArgumentException.class, () -> {
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
                 userService.registerUser(request);
-            }, "이미 존재하는 id입니다.");
+            });
+
+            // then
+            assertEquals("이미 존재하는 id입니다.", exception.getMessage());
         }
 
         @Test
@@ -95,9 +106,12 @@ class UserServiceTest {
             when(userRepository.existsByEmail("duplicate@test.com")).thenReturn(true);
 
             // when & then
-            assertThrows(IllegalArgumentException.class, () -> {
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
                 userService.registerUser(request);
-            }, "이미 존재하는 이메일입니다.");
+            });
+
+            // then
+            assertEquals("이미 존재하는 이메일입니다.", exception.getMessage());
         }
 
         @Test
@@ -117,9 +131,12 @@ class UserServiceTest {
             when(userRepository.existsByEmail("test@test.com")).thenReturn(false);
 
             // when & then
-            assertThrows(IllegalArgumentException.class, () -> {
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
                 userService.registerUser(request);
-            }, "비밀번호는 영문과 숫자를 포함한 8자리 이상이어야 합니다.");
+            });
+
+            // then
+            assertEquals("비밀번호는 영문과 숫자를 포함한 8자리 이상이어야 합니다.", exception.getMessage());
         }
 
         @Test
@@ -139,9 +156,12 @@ class UserServiceTest {
             when(userRepository.existsByEmail("test@test.com")).thenReturn(false);
 
             // when & then
-            assertThrows(IllegalArgumentException.class, () -> {
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
                 userService.registerUser(request);
-            }, "비밀번호는 영문과 숫자를 포함한 8자리 이상이어야 합니다.");
+            });
+
+            // then
+            assertEquals("비밀번호는 영문과 숫자를 포함한 8자리 이상이어야 합니다.", exception.getMessage());
         }
 
         @Test
@@ -161,9 +181,94 @@ class UserServiceTest {
             when(userRepository.existsByEmail("test@test.com")).thenReturn(false);
 
             // when & then
-            assertThrows(IllegalArgumentException.class, () -> {
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
                 userService.registerUser(request);
-            }, "비밀번호는 영문과 숫자를 포함한 8자리 이상이어야 합니다.");
+            });
+
+            // then
+            assertEquals("비밀번호는 영문과 숫자를 포함한 8자리 이상이어야 합니다.", exception.getMessage());
         }
     }
+
+    @Nested
+    @DisplayName("로그인 성공 케이스")
+    class LoginSuccessCases {
+
+        @Test
+        @DisplayName("정상적인 로그인 요청")
+        void testLoginSuccess() {
+            // given
+            LoginRequest loginRequest = new LoginRequest();
+            loginRequest.setLoginID("testuser");
+            loginRequest.setPassword("password123");
+
+            User user = User.builder()
+                    .id(1L)
+                    .loginID("testuser")
+                    .password("encodedPassword")
+                    .build();
+
+            when(userRepository.findByLoginID("testuser")).thenReturn(Optional.of(user));
+            when(passwordEncoder.matches("password123", "encodedPassword")).thenReturn(true);
+            when(jwtUtil.generateAccessToken(1L)).thenReturn("generatedAccessToken");
+
+            // when
+            LoginResponse response = userService.login(loginRequest);
+
+            // then
+            assertNotNull(response);
+            assertEquals("generatedAccessToken", response.getAccessToken());
+            verify(userRepository).save(user);
+        }
+    }
+
+    @Nested
+    @DisplayName("로그인 실패 케이스")
+    class LoginFailureCases {
+
+        @Test
+        @DisplayName("존재하지 않는 사용자")
+        void testUserNotFound() {
+            // given
+            LoginRequest loginRequest = new LoginRequest();
+            loginRequest.setLoginID("unknownuser");
+            loginRequest.setPassword("password123");
+
+            when(userRepository.findByLoginID("unknownuser")).thenReturn(Optional.empty());
+
+            // when & then
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+                userService.login(loginRequest);
+            });
+
+            assertEquals("존재하지 않는 사용자입니다.", exception.getMessage());
+        }
+
+        @Test
+        @DisplayName("비밀번호 불일치")
+        void testPasswordMismatch() {
+            // given
+            LoginRequest loginRequest = new LoginRequest();
+            loginRequest.setLoginID("testuser");
+            loginRequest.setPassword("wrongpassword");
+
+            User user = User.builder()
+                    .id(1L)
+                    .loginID("testuser")
+                    .password("encodedPassword")
+                    .build();
+
+            when(userRepository.findByLoginID("testuser")).thenReturn(Optional.of(user));
+            when(passwordEncoder.matches("wrongpassword", "encodedPassword")).thenReturn(false);
+
+            // when & then
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+                userService.login(loginRequest);
+            });
+
+            assertEquals("비밀번호가 일치하지 않습니다.", exception.getMessage());
+        }
+    }
+
+
 }
