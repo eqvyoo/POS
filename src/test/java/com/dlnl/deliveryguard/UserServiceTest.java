@@ -8,6 +8,7 @@ import com.dlnl.deliveryguard.service.UserService;
 import com.dlnl.deliveryguard.web.DTO.LoginRequest;
 import com.dlnl.deliveryguard.web.DTO.LoginResponse;
 import com.dlnl.deliveryguard.web.DTO.RegistrationRequest;
+import com.dlnl.deliveryguard.web.DTO.TokenResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -15,8 +16,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -271,4 +274,148 @@ class UserServiceTest {
             assertEquals("비밀번호가 일치하지 않습니다.", exception.getMessage());
         }
     }
+    @Nested
+    @DisplayName("토큰 재발급 성공 케이스")
+    class ReissueTokenSuccessCases {
+
+        @Test
+        @DisplayName("유효한 refresh token으로 토큰 재발급 성공")
+        void reissueTokenSuccess() {
+            // given
+            String expiredAccessToken = "expiredAccessToken";
+            String refreshToken = "validRefreshToken";
+            Long userId = 1L;
+
+            User user = User.builder()
+                    .id(userId)
+                    .loginID("testuser")
+                    .refreshToken(refreshToken)
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+
+            // Mocking behavior
+            when(jwtUtil.validateRefreshToken(refreshToken)).thenReturn(true);
+            when(jwtUtil.getIdFromToken(refreshToken)).thenReturn(userId);
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            when(jwtUtil.generateAccessToken(userId)).thenReturn("newAccessToken");
+            when(jwtUtil.generateRefreshToken(userId)).thenReturn("newRefreshToken");
+
+            // when
+            TokenResponse response = userService.reissueToken(expiredAccessToken, refreshToken);
+
+            // then
+            assertNotNull(response);
+            assertEquals("newAccessToken", response.getAccessToken());
+            assertEquals("newRefreshToken", response.getRefreshToken());
+
+            verify(userRepository, times(1)).save(any(User.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("토큰 재발급 실패 케이스")
+    class ReissueTokenFailureCases {
+
+        @Test
+        @DisplayName("유효하지 않은 refresh token으로 토큰 재발급 실패")
+        void reissueTokenInvalidRefreshToken() {
+            // given
+            String expiredAccessToken = "expiredAccessToken";
+            String refreshToken = "invalidRefreshToken";
+
+            when(jwtUtil.validateRefreshToken(refreshToken)).thenThrow(new IllegalArgumentException("유효하지 않은 리프레시 토큰입니다."));
+
+            // when & then
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+                userService.reissueToken(expiredAccessToken, refreshToken);
+            });
+
+            assertEquals("유효하지 않은 리프레시 토큰입니다.", exception.getMessage());
+        }
+
+        @Test
+        @DisplayName("사용자를 찾을 수 없을 때 토큰 재발급 실패")
+        void reissueTokenUserNotFound() {
+            // given
+            String expiredAccessToken = "expiredAccessToken";
+            String refreshToken = "validRefreshToken";
+            Long userId = 1L;
+
+            when(jwtUtil.validateRefreshToken(refreshToken)).thenReturn(true);
+            when(jwtUtil.getIdFromToken(refreshToken)).thenReturn(userId);
+            when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+            // when & then
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+                userService.reissueToken(expiredAccessToken, refreshToken);
+            });
+
+            assertEquals("사용자를 찾을 수 없습니다.", exception.getMessage());
+        }
+
+        @Test
+        @DisplayName("Refresh token이 일치하지 않을 때 토큰 재발급 실패")
+        void reissueTokenRefreshTokenMismatch() {
+            // given
+            String expiredAccessToken = "expiredAccessToken";
+            String refreshToken = "validRefreshToken";
+            Long userId = 1L;
+
+            User user = User.builder()
+                    .id(userId)
+                    .loginID("testuser")
+                    .refreshToken("differentRefreshToken") // 다른 refresh token을 가진 사용자
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+
+            when(jwtUtil.validateRefreshToken(refreshToken)).thenReturn(true);
+            when(jwtUtil.getIdFromToken(refreshToken)).thenReturn(userId);
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+            // when & then
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+                userService.reissueToken(expiredAccessToken, refreshToken);
+            });
+
+            assertEquals("리프레시 토큰이 일치하지 않습니다.", exception.getMessage());
+        }
+    }
+
+    @Nested
+    @DisplayName("Access token 유효성 검증 케이스")
+    class ValidateAccessTokenCases {
+
+        @Test
+        @DisplayName("유효한 Access token")
+        void validateValidAccessToken() {
+            // given
+            String accessToken = "validAccessToken";
+
+            when(jwtUtil.validateToken(accessToken)).thenReturn(true);
+
+            // when
+            boolean isValid = userService.validateAccessToken(accessToken);
+
+            // then
+            assertTrue(isValid);
+        }
+
+        @Test
+        @DisplayName("만료된 Access token")
+        void validateExpiredAccessToken() {
+            // given
+            String accessToken = "expiredAccessToken";
+
+            when(jwtUtil.validateToken(accessToken)).thenThrow(new BadCredentialsException("유효하지 않은 토큰입니다."));
+
+            // when & then
+            BadCredentialsException exception = assertThrows(BadCredentialsException.class, () -> {
+                userService.validateAccessToken(accessToken);
+            });
+
+            assertEquals("유효하지 않은 토큰입니다.", exception.getMessage());
+        }
+    }
+
+
 }

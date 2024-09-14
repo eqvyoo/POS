@@ -24,4 +24,7 @@ public class Menu {
     private String name;
     @Column(name = "price")
     private String price;
+
+    @Column(name = "amount")
+    private Integer amount;
 }

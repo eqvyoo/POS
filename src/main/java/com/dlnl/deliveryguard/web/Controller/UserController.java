@@ -29,6 +29,24 @@ public class UserController {
         return new ResponseEntity<>(loginResponse, HttpStatus.OK);
     }
 
+    @PostMapping("/reissue")
+    public ResponseEntity<TokenResponse> reissueToken(@RequestHeader("Authorization") String accessToken,
+                                                      @RequestHeader("Refresh-Token") String refreshToken) {
+        String actualAccessToken = accessToken.substring(7);
+        TokenResponse tokenResponse = userService.reissueToken(actualAccessToken, refreshToken);
+        return ResponseEntity.ok(tokenResponse);
+    }
+
+    @GetMapping("/validate-token")
+    public ResponseEntity<String> validateAccessToken(@RequestHeader("Authorization") String accessToken) {
+        String actualAccessToken = accessToken.substring(7);
+        if (userService.validateAccessToken(actualAccessToken)) {
+            return ResponseEntity.ok("토큰이 유효합니다.");
+        } else {
+            return ResponseEntity.status(401).body("토큰이 만료되었습니다.");
+        }
+    }
+
 
 }
 

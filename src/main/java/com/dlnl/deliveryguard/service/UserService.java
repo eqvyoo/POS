@@ -94,45 +94,42 @@ public class UserService {
                 .build();
     }
 
-//    public LoginResponse authenticateUser(LoginRequest loginRequest) throws Exception {
-//        User user = findByUsername(loginRequest.getUsername());
-//        if (user == null || !passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-//            throw new BadCredentialsException("아이디 또는 비밀번호가 잘못 되었습니다. 아이디와 비밀번호를 정확히 입력해 주세요.");
-//        }
-//        Long id = user.getId();
-//        final String accessToken = jwtUtil.generateAccessToken(id);
-//
-//        return LoginResponse.builder()
-//                .accessToken(accessToken)
-//                .refreshToken(user.getRefreshToken())
-//                .build();
-//    }
-//
-//
-//    @Transactional
-//    public ReissueAccessTokenResponse reissueAccessToken(String token) {
-//        String refreshToken = token.substring(7);
-//        jwtUtil.validateRefreshToken(refreshToken);
-//        Long userId = jwtUtil.getIdFromToken(refreshToken);
-//        User user = findUserById(userId);
-//        String newAccessToken = jwtUtil.generateAccessToken(userId);
-//        user.updateUpdatedAt(LocalDateTime.now());
-//        userRepository.save(user);
-//        return ReissueAccessTokenResponse.builder()
-//                .accessToken(newAccessToken)
-//                .build();
-//    }
-//
-//    @Transactional
-//    public void updateSubscriptions(List<SubscriptionUpdateRequest> requests) {
-//        for (SubscriptionUpdateRequest request : requests) {
-//            User user = findByUsername(request.getUsername());
-//            user.updateUpdatedAt(LocalDateTime.now());
-//
-//            userRepository.save(user);
-//        }
-//    }
-//
+    @Transactional
+    public TokenResponse reissueToken(String expiredAccessToken, String refreshToken) {
+
+        if (!jwtUtil.validateRefreshToken(refreshToken)) {
+            throw new IllegalArgumentException("유효하지 않은 리프레시 토큰입니다.");
+        }
+
+        Long userId = jwtUtil.getIdFromToken(refreshToken);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        // DB에 저장된 Refresh token과 일치하는지 확인
+        if (!user.getRefreshToken().equals(refreshToken)) {
+            throw new IllegalArgumentException("리프레시 토큰이 일치하지 않습니다.");
+        }
+
+        // Access token 재발급
+        String newAccessToken = jwtUtil.generateAccessToken(user.getId());
+        String newRefreshToken = jwtUtil.generateRefreshToken(user.getId());
+
+        // 새로운 Refresh token을 업데이트 후 저장
+        user.updateRefreshToken(newRefreshToken);
+        user.updateUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        return TokenResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .build();
+    }
+
+
+    public boolean validateAccessToken(String token) {
+        return jwtUtil.validateToken(token);
+    }
+
 //    public UserInfoResponse getUserInfo(String token) {
 //        String jwtToken = token.substring(7);
 //        jwtUtil.validateToken(jwtToken);
