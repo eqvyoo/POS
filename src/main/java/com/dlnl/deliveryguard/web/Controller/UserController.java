@@ -2,6 +2,7 @@ package com.dlnl.deliveryguard.web.Controller;
 
 import com.dlnl.deliveryguard.service.UserService;
 import com.dlnl.deliveryguard.web.DTO.*;
+import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -44,6 +45,18 @@ public class UserController {
             return ResponseEntity.ok("토큰이 유효합니다.");
         } else {
             return ResponseEntity.status(401).body("토큰이 만료되었습니다.");
+        }
+    }
+
+    @PostMapping("/send-user-id")
+    public ResponseEntity<String> sendUserIdToEmail(@RequestParam String email) {
+        try {
+            userService.sendUserIdToEmail(email);
+            return ResponseEntity.ok("사용자 ID가 이메일로 전송되었습니다.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (MessagingException e) {
+            return ResponseEntity.status(500).body("이메일 전송 중 오류가 발생했습니다.");
         }
     }
 

@@ -9,6 +9,8 @@ import com.dlnl.deliveryguard.web.DTO.LoginRequest;
 import com.dlnl.deliveryguard.web.DTO.LoginResponse;
 import com.dlnl.deliveryguard.web.DTO.RegistrationRequest;
 import com.dlnl.deliveryguard.web.DTO.TokenResponse;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -16,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -39,6 +42,9 @@ class UserServiceTest {
 
     @InjectMocks
     private UserService userService;
+
+    @Mock
+    private JavaMailSender mailSender;
 
     @BeforeEach
     void setUp() {
@@ -416,6 +422,58 @@ class UserServiceTest {
             assertEquals("유효하지 않은 토큰입니다.", exception.getMessage());
         }
     }
+    @Nested
+    @DisplayName("이메일 전송 성공 케이스")
+    class SendEmailSuccessCases {
 
+        @Test
+        @DisplayName("존재하는 사용자에게 이메일 전송 성공")
+        void sendEmailSuccess() throws MessagingException {
+            // given
+            String email = "user@example.com";
+            String loginID = "testuser";
+
+            User user = User.builder()
+                    .loginID(loginID)
+                    .email(email)
+                    .build();
+
+            MimeMessage mimeMessage = mock(MimeMessage.class); // MimeMessage를 모킹
+
+            // Mocking behavior
+            when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+            when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+
+            // when
+            userService.sendUserIdToEmail(email);
+
+            // then
+            verify(userRepository, times(1)).findByEmail(email); // 이메일로 사용자 찾기 검증
+            verify(mailSender, times(1)).send(mimeMessage); // 이메일 전송 검증
+        }
+    }
+
+    @Nested
+    @DisplayName("이메일 전송 실패 케이스")
+    class SendEmailFailureCases {
+
+        @Test
+        @DisplayName("존재하지 않는 이메일로 이메일 전송 시도 실패")
+        void sendEmailUserNotFound() {
+            // given
+            String email = "unknown@example.com";
+
+            // Mocking behavior
+            when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+
+            // when & then
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+                userService.sendUserIdToEmail(email);
+            });
+
+            assertEquals("해당 이메일을 가진 사용자를 찾을 수 없습니다.", exception.getMessage());
+        }
+
+    }
 
 }

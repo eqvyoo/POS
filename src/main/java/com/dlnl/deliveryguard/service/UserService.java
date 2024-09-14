@@ -5,9 +5,13 @@ import com.dlnl.deliveryguard.domain.User;
 import com.dlnl.deliveryguard.jwt.JwtUtil;
 import com.dlnl.deliveryguard.repository.UserRepository;
 import com.dlnl.deliveryguard.web.DTO.*;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +29,8 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    private final JavaMailSender mailSender;
     private final JwtUtil jwtUtil;
 
     public User findUserById(Long id) {
@@ -129,6 +135,32 @@ public class UserService {
     public boolean validateAccessToken(String token) {
         return jwtUtil.validateToken(token);
     }
+
+    public void sendUserIdToEmail(String email) throws MessagingException {
+        Optional<User> userOpt = userRepository.findByEmail(email);
+
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            String userId = user.getLoginID();
+
+            sendEmailWithUserId(email, userId);
+        } else {
+            throw new IllegalArgumentException("해당 이메일을 가진 사용자를 찾을 수 없습니다.");
+        }
+    }
+
+    private void sendEmailWithUserId(String email, String userId) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+        helper.setTo(email);
+        helper.setSubject("Your User ID");
+        helper.setText("<p>당신의 사용자 ID는 다음과 같습니다: <strong>" + userId + "</strong></p>", true);
+
+        mailSender.send(message);
+    }
+
+
 
 //    public UserInfoResponse getUserInfo(String token) {
 //        String jwtToken = token.substring(7);
