@@ -1,5 +1,6 @@
 package com.dlnl.deliveryguard.service;
 
+import com.dlnl.deliveryguard.config.PasswordUtil;
 import com.dlnl.deliveryguard.domain.Role;
 import com.dlnl.deliveryguard.domain.User;
 import com.dlnl.deliveryguard.jwt.JwtUtil;
@@ -15,11 +16,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
-import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -154,11 +151,43 @@ public class UserService {
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
         helper.setTo(email);
-        helper.setSubject("Your User ID");
-        helper.setText("<p>당신의 사용자 ID는 다음과 같습니다: <strong>" + userId + "</strong></p>", true);
+        helper.setSubject("내 아이디 찾기");
+        helper.setText("<p>고객님의 이메일와 일치하는 아이디입니다.<br><strong>" + userId + "</strong></p>", true);
 
         mailSender.send(message);
     }
+    public void resetPasswordAndSendEmail(String email) throws MessagingException {
+        Optional<User> userOpt = userRepository.findByEmail(email);
+
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+
+            // 랜덤 비밀번호 생성
+            String randomPassword = PasswordUtil.generateRandomPassword();
+
+            // 비밀번호 암호화 후 업데이트
+            String encodedPassword = passwordEncoder.encode(randomPassword);
+            user.updatePassword(encodedPassword);
+            userRepository.save(user);
+
+            // 이메일로 비밀번호 전송
+            sendEmailWithNewPassword(email, randomPassword);
+        } else {
+            throw new IllegalArgumentException("해당 이메일을 가진 사용자를 찾을 수 없습니다.");
+        }
+    }
+
+    private void sendEmailWithNewPassword(String email, String newPassword) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+        helper.setTo(email);
+        helper.setSubject("임시 비밀번호 발급");
+        helper.setText("<p>임시 비밀번호를 알려드립니다.<br><strong>" + newPassword + "</strong></p>", true);
+
+        mailSender.send(message);
+    }
+
 
 
 

@@ -59,6 +59,17 @@ public class UserController {
             return ResponseEntity.status(500).body("이메일 전송 중 오류가 발생했습니다.");
         }
     }
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestParam String email) {
+        try {
+            userService.resetPasswordAndSendEmail(email);
+            return ResponseEntity.ok("새 비밀번호가 이메일로 전송되었습니다.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (MessagingException e) {
+            return ResponseEntity.status(500).body("이메일 전송 중 오류가 발생했습니다.");
+        }
+    }
 
 
 }
