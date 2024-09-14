@@ -211,6 +211,7 @@ class UserServiceTest {
             when(userRepository.findByLoginID("testuser")).thenReturn(Optional.of(user));
             when(passwordEncoder.matches("password123", "encodedPassword")).thenReturn(true);
             when(jwtUtil.generateAccessToken(1L)).thenReturn("generatedAccessToken");
+            when(jwtUtil.generateRefreshToken(1L)).thenReturn("generatedRefreshToken");
 
             // when
             LoginResponse response = userService.login(loginRequest);
@@ -218,6 +219,7 @@ class UserServiceTest {
             // then
             assertNotNull(response);
             assertEquals("generatedAccessToken", response.getAccessToken());
+            assertEquals("generatedRefreshToken", response.getRefreshToken());
             verify(userRepository).save(user);
         }
     }
@@ -269,6 +271,4 @@ class UserServiceTest {
             assertEquals("비밀번호가 일치하지 않습니다.", exception.getMessage());
         }
     }
-
-
 }

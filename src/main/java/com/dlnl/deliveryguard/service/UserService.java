@@ -84,13 +84,13 @@ public class UserService {
         String accessToken = jwtUtil.generateAccessToken(user.getId());
         String refreshToken = jwtUtil.generateRefreshToken(user.getId());
 
-        user.updateAccessToken(accessToken);
         user.updateRefreshToken(refreshToken);
         user.updateUpdatedAt(LocalDateTime.now());
         userRepository.save(user);
 
         return LoginResponse.builder()
                 .accessToken(accessToken)
+                .refreshToken(refreshToken)
                 .build();
     }
 

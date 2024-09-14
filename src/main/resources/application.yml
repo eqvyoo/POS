@@ -22,6 +22,17 @@ spring:
     secret: ${JWT_SECRET}
     access_exp_time: ${JWT_ACCESS_TIME}
     refresh_exp_time: ${JWT_REFRESH_TIME}
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${GOOGLE_SMTP_ACCOUNT}
+    password: ${GOOGLE_SMTP_PW}
+    properties:
+      mail:
+        smtp:
+          starttls:
+            enable: true
+          auth: true
 
 logging.level:
   org.springframework.SQL: debug

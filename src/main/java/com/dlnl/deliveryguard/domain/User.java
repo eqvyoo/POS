@@ -48,9 +48,6 @@ public class User {
     @Column(name = "refresh_token")
     private String refreshToken;
 
-    @Column(name = "access_token")
-    private String accessToken;
-
     @Column(name = "created_at",nullable = false, updatable = false)
     @CreatedDate
     private LocalDateTime createdAt;
@@ -62,12 +59,10 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
-
+    @OneToMany(mappedBy = "owner")
+    private List<Order> orders;
     public void updateRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
-    }
-    public void updateAccessToken(String accessToken) {
-        this.accessToken = accessToken;
     }
 
     public void updateUpdatedAt(LocalDateTime now){

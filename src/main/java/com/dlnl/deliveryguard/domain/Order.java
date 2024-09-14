@@ -9,6 +9,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.sql.Time;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Builder
@@ -23,18 +24,21 @@ public class Order {
     private Long id;
     @Column(name = "order_date_time")
     private LocalDateTime orderDateTime;
-    @Column(name = "order_menu")
-    private String orderMenu;
-    @Column(name = "order_phone_number")
-    private String orderPhoneNumber;
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id")
+    private List<Menu> menus;
+    @Column(name = "customer_phone_number")
+    private String CustomerPhoneNumber;
     @Column(name = "order_platform")
     private String orderPlatform;
-    @Column(name = "order_method")
-    private String orderMethod;
+    @Column(name = "order_number")
+    private String orderNumber;
+    @Column(name = "payment_method")
+    private String paymentMethod;
     @Column(name = "order_type")
     private String orderType;
-    @Column(name = "order_status")
-    private String orderStatus;
+    @Column(name = "status")
+    private String status;
     @Column(name = "payment_amount")
     private String paymentAmount;
     @Column(name = "estimated_cooking_time")
@@ -43,6 +47,7 @@ public class Order {
     private String deliveryAgency;
     @Column(name = "rider_request_time")
     private LocalDateTime riderRequestTime;
-
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User owner;
 }
