@@ -199,18 +199,24 @@ public class UserService implements UserDetailsService {
         mailSender.send(message);
     }
 
+    // 기존 비밀번호와 새로운 비밀번호가 모두 필요한 경우 (로그인된 사용자의 비밀번호 변경)
     @Transactional
-    public void updatePassword(Long userId, String newPassword) {
-        //userId는 고유 번호인 값
+    public void updatePassword(Long userId, String currentPassword, String newPassword) {
         User user = findUserById(userId);
 
+        // 현재 비밀번호 검증
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+        }
+
+        // 새로운 비밀번호 암호화 후 업데이트
         String encodedPassword = passwordEncoder.encode(newPassword);
-        user.updateUpdatedAt(LocalDateTime.now());
         user.updatePassword(encodedPassword);
+        user.updateUpdatedAt(LocalDateTime.now());
 
         userRepository.save(user);
     }
-
+    
     public Long getUserIdFromUserDetails(UserDetails userDetails) {
         try {
             String loginId = userDetails.getUsername();

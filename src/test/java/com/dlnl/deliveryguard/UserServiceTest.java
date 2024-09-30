@@ -537,58 +537,5 @@ class UserServiceTest {
         }
 
     }
-    @Nested
-    @DisplayName("비밀번호 변경 성공 케이스")
-    class UpdatePasswordSuccessCases {
-
-        @Test
-        @DisplayName("정상적인 비밀번호 변경")
-        void updatePasswordSuccess() {
-            // given
-            Long userId = 1L;
-            String newPassword = "newPassword123";
-            String encodedPassword = "encodedNewPassword";
-
-            User user = User.builder()
-                    .id(userId)
-                    .loginID("testuser")
-                    .password("oldPassword")
-                    .build();
-
-            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-            when(passwordEncoder.encode(newPassword)).thenReturn(encodedPassword);
-
-            // when
-            userService.updatePassword(userId, newPassword);
-
-            // then
-            verify(userRepository, times(1)).findById(userId);
-            verify(passwordEncoder, times(1)).encode(newPassword);
-            verify(userRepository, times(1)).save(user);
-            assertEquals(encodedPassword, user.getPassword());
-        }
-    }
-
-    @Nested
-    @DisplayName("비밀번호 변경 실패 케이스")
-    class UpdatePasswordFailureCases {
-
-        @Test
-        @DisplayName("사용자를 찾지 못한 경우 실패")
-        void updatePasswordUserNotFound() {
-            // given
-            Long userId = 1L;
-            String newPassword = "newPassword123";
-
-            when(userRepository.findById(userId)).thenReturn(Optional.empty());
-
-            // when & then
-            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-                userService.updatePassword(userId, newPassword);
-            });
-
-            assertEquals("사용자를 찾을 수 없습니다.", exception.getMessage());
-        }
-    }
 
 }

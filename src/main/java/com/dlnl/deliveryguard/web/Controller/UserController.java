@@ -77,7 +77,7 @@ public class UserController {
     public ResponseEntity<String> updatePassword(@AuthenticationPrincipal UserDetails userDetails, @RequestBody PasswordUpdateRequest request) {
         try {
             Long userId = userService.getUserIdFromUserDetails(userDetails);
-            userService.updatePassword(userId, request.getNewPassword());
+            userService.updatePassword(userId, request.getCurrentPassword(), request.getNewPassword());
             return ResponseEntity.ok("비밀번호가 성공적으로 변경되었습니다.");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
