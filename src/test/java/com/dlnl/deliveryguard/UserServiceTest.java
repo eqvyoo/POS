@@ -2,6 +2,7 @@ package com.dlnl.deliveryguard;
 
 
 import com.dlnl.deliveryguard.config.PasswordUtil;
+import com.dlnl.deliveryguard.domain.Role;
 import com.dlnl.deliveryguard.domain.User;
 import com.dlnl.deliveryguard.jwt.JwtUtil;
 import com.dlnl.deliveryguard.repository.UserRepository;
@@ -384,7 +385,7 @@ class UserServiceTest {
                 userService.reissueToken(expiredAccessToken, refreshToken);
             });
 
-            assertEquals("리프레시 토큰이 일치하지 않습니다.", exception.getMessage());
+            assertEquals("refresh 토큰이 일치하지 않습니다.", exception.getMessage());
         }
     }
 
@@ -477,65 +478,68 @@ class UserServiceTest {
 
     }
     @Nested
-    @DisplayName("비밀번호 재설정 성공 케이스")
-    class ResetPasswordSuccessCases {
+    @DisplayName("비밀번호 변경 테스트")
+    class UpdatePasswordTests {
 
         @Test
-        @DisplayName("존재하는 사용자에게 랜덤 비밀번호로 변경 후 이메일 전송 성공")
-        void resetPasswordSuccess() throws MessagingException {
+        @DisplayName("로그인된 사용자가 현재 비밀번호를 사용해 비밀번호 변경 성공")
+        void updatePasswordWithCurrentPasswordSuccess() {
             // given
-            String email = "user@example.com";
-            String loginID = "testuser";
-            String randomPassword = "newRandomPassword";
-            String encodedPassword = "encodedRandomPassword";
-
-            User user = User.builder()
-                    .loginID(loginID)
-                    .email(email)
+            User testUser = User.builder()
+                    .id(1L)
+                    .loginID("testuser")
+                    .email("testuser@example.com")
+                    .password("encodedPassword")
+                    .role(Role.USER)
+                    .updatedAt(LocalDateTime.now())
                     .build();
 
-            MimeMessage mimeMessage = mock(MimeMessage.class); // MimeMessage 모킹
-
-            // Mocking behavior
-            when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
-            when(passwordEncoder.encode(randomPassword)).thenReturn(encodedPassword); // 랜덤 비밀번호 암호화
-            when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
-
-            // 랜덤 비밀번호 생성 모킹
-            mockStatic(PasswordUtil.class);
-            when(PasswordUtil.generateRandomPassword()).thenReturn(randomPassword);
+            Long userId = testUser.getId();
+            String currentPassword = "currentPassword123!";
+            String newPassword = "newPassword456!";
+            String encodedNewPassword = "encodedNewPassword";
 
             // when
-            userService.resetPasswordAndSendEmail(email);
+            when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+            when(passwordEncoder.matches(currentPassword, testUser.getPassword())).thenReturn(true);
+            when(passwordEncoder.encode(newPassword)).thenReturn(encodedNewPassword);
+
+            // execute
+            userService.updatePassword(userId, currentPassword, newPassword);
 
             // then
-            verify(userRepository, times(1)).findByEmail(email); // 이메일로 사용자 찾기 검증
-            verify(userRepository, times(1)).save(user); // 비밀번호 업데이트 검증
-            verify(mailSender, times(1)).send(mimeMessage); // 이메일 전송 검증
+            assertEquals(encodedNewPassword, testUser.getPassword());
+            verify(userRepository, times(1)).save(testUser);
         }
-    }
-
-    @Nested
-    @DisplayName("비밀번호 재설정 실패 케이스")
-    class ResetPasswordFailureCases {
 
         @Test
-        @DisplayName("존재하지 않는 이메일로 비밀번호 재설정 시도 실패")
-        void resetPasswordUserNotFound() {
+        @DisplayName("현재 비밀번호가 일치하지 않아 비밀번호 변경 실패")
+        void updatePasswordWithWrongCurrentPassword() {
             // given
-            String email = "unknown@example.com";
+            User testUser = User.builder()
+                    .id(1L)
+                    .loginID("testuser")
+                    .email("testuser@example.com")
+                    .password("encodedPassword")
+                    .role(Role.USER)
+                    .updatedAt(LocalDateTime.now())
+                    .build();
 
-            // Mocking behavior
-            when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+            Long userId = testUser.getId();
+            String currentPassword = "wrongPassword";
+            String newPassword = "newPassword456!";
 
-            // when & then
+            // when
+            when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+            when(passwordEncoder.matches(currentPassword, testUser.getPassword())).thenReturn(false);
+
+            // execute & then
             IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-                userService.resetPasswordAndSendEmail(email);
+                userService.updatePassword(userId, currentPassword, newPassword);
             });
 
-            assertEquals("해당 이메일을 가진 사용자를 찾을 수 없습니다.", exception.getMessage());
+            assertEquals("현재 비밀번호가 일치하지 않습니다.", exception.getMessage());
+            verify(userRepository, never()).save(testUser);
         }
-
     }
-
 }
