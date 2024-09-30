@@ -6,6 +6,8 @@ import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -68,6 +70,20 @@ public class UserController {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (MessagingException e) {
             return ResponseEntity.status(500).body("이메일 전송 중 오류가 발생했습니다.");
+        }
+    }
+
+    @PostMapping("/update-password")
+    public ResponseEntity<String> updatePassword(@AuthenticationPrincipal UserDetails userDetails, @RequestBody PasswordUpdateRequest request) {
+        try {
+            Long userId = userService.getUserIdFromUserDetails(userDetails);
+            userService.updatePassword(userId, request.getNewPassword());
+            return ResponseEntity.ok("비밀번호가 성공적으로 변경되었습니다.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();  // 예외 로그 출력
+            return ResponseEntity.status(500).body("비밀번호 변경 중 오류가 발생했습니다.");
         }
     }
 

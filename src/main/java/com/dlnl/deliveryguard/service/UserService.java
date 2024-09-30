@@ -13,16 +13,21 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Optional;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UserService {
+public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -80,6 +85,9 @@ public class UserService {
         User user = userRepository.findByLoginID(loginRequest.getLoginID())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
+        System.out.println("Input Password: " + loginRequest.getPassword());
+        System.out.println("Stored Password: " + user.getPassword());
+
         if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
         }
@@ -110,7 +118,7 @@ public class UserService {
 
         // DB에 저장된 Refresh token과 일치하는지 확인
         if (!user.getRefreshToken().equals(refreshToken)) {
-            throw new IllegalArgumentException("리프레시 토큰이 일치하지 않습니다.");
+            throw new IllegalArgumentException("refresh 토큰이 일치하지 않습니다.");
         }
 
         // Access token 재발급
@@ -164,10 +172,13 @@ public class UserService {
 
             // 랜덤 비밀번호 생성
             String randomPassword = PasswordUtil.generateRandomPassword();
+            System.out.println("Generated Password: " + randomPassword);
 
             // 비밀번호 암호화 후 업데이트
             String encodedPassword = passwordEncoder.encode(randomPassword);
+            System.out.println("Encoded Password: " + encodedPassword);
             user.updatePassword(encodedPassword);
+            user.updateUpdatedAt(LocalDateTime.now());
             userRepository.save(user);
 
             // 이메일로 비밀번호 전송
@@ -183,42 +194,58 @@ public class UserService {
 
         helper.setTo(email);
         helper.setSubject("임시 비밀번호 발급");
-        helper.setText("<p>임시 비밀번호를 알려드립니다.<br><strong>" + newPassword + "</strong></p>", true);
+        helper.setText("<p>임시 비밀번호를 알려드립니다.<br>" + newPassword + "</p>", true);
 
         mailSender.send(message);
     }
 
+    @Transactional
+    public void updatePassword(Long userId, String newPassword) {
+        //userId는 고유 번호인 값
+        User user = findUserById(userId);
 
+        String encodedPassword = passwordEncoder.encode(newPassword);
+        user.updateUpdatedAt(LocalDateTime.now());
+        user.updatePassword(encodedPassword);
 
+        userRepository.save(user);
+    }
 
-//    public UserInfoResponse getUserInfo(String token) {
-//        String jwtToken = token.substring(7);
-//        jwtUtil.validateToken(jwtToken);
-//        Long userId = jwtUtil.getIdFromToken(jwtToken);
-//        User user = findUserById(userId);
-//
-//
-//        return UserInfoResponse.builder()
-//                .id(user.getId())
-//                .username(user.getUsername())
-//                .build();
-//
-//    }
-//    @Transactional
-//    public PasswordUpdateResponse updatePassword(String token, PasswordUpdateRequest request) {
-//        String jwtToken = token.substring(7);
-//        jwtUtil.validateToken(jwtToken);
-//
-//        User user = findByUsername(request.getUsername());
-//        user.updatePassword(passwordEncoder.encode(request.getNewPassword()));
-//        user.updateUpdatedAt(LocalDateTime.now());
-//        userRepository.save(user);
-//
-//        return PasswordUpdateResponse.builder()
-//                .id(user.getId())
-//                .username(user.getUsername())
-//                .build();
-//    }
+    public Long getUserIdFromUserDetails(UserDetails userDetails) {
+        try {
+            String loginId = userDetails.getUsername();
+            User user = userRepository.findByLoginID(loginId)
+                    .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + loginId));
+            return user.getId();
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("UserDetails의 사용자명에서 숫자 형식의 ID를 추출할 수 없습니다: " + userDetails.getUsername());
+        }
+    }
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = userRepository.findByLoginID(username)
+                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + username));
+
+        return createUserDetails(user);
+    }
+
+    public UserDetails loadUserById(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + userId));
+
+        return createUserDetails(user);
+    }
+
+    private UserDetails createUserDetails(User user) {
+        SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + user.getRole().name());
+
+        return new org.springframework.security.core.userdetails.User(
+                user.getLoginID(),
+                user.getPassword(),
+                Collections.singletonList(authority)
+        );
+    }
+
 
 }
 
