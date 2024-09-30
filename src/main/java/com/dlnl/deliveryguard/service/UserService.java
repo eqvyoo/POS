@@ -216,7 +216,7 @@ public class UserService implements UserDetailsService {
 
         userRepository.save(user);
     }
-    
+
     public Long getUserIdFromUserDetails(UserDetails userDetails) {
         try {
             String loginId = userDetails.getUsername();
