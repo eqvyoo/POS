@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -84,6 +85,21 @@ public class UserController {
         } catch (Exception e) {
             e.printStackTrace();  // 예외 로그 출력
             return ResponseEntity.status(500).body("비밀번호 변경 중 오류가 발생했습니다.");
+        }
+    }
+
+    @GetMapping("/profile")
+    public ResponseEntity<?> getUserProfile(@AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            UserProfileResponse userProfile = userService.getUserProfile(userDetails.getUsername());
+            return ResponseEntity.ok(userProfile);
+        } catch (UsernameNotFoundException e) {
+            return ResponseEntity.badRequest().body("사용자를 찾을 수 없습니다.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("잘못된 요청입니다: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("서버 내부 오류가 발생했습니다.");
         }
     }
 

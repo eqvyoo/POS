@@ -252,6 +252,21 @@ public class UserService implements UserDetailsService {
         );
     }
 
+    public UserProfileResponse getUserProfile(String loginID) {
+        User user = userRepository.findByLoginID(loginID)
+                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + loginID));
+
+        // UserProfileResponse로 변환하여 반환
+        return UserProfileResponse.builder()
+                .userName(user.getUserName())
+                .phoneNumber(user.getPhoneNumber())
+                .email(user.getEmail())
+                .storeName(user.getStoreName())
+                .storeAddress(user.getStoreAddress())
+                .build();
+    }
+
+
 
 }
 

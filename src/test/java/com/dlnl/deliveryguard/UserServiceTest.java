@@ -7,10 +7,7 @@ import com.dlnl.deliveryguard.domain.User;
 import com.dlnl.deliveryguard.jwt.JwtUtil;
 import com.dlnl.deliveryguard.repository.UserRepository;
 import com.dlnl.deliveryguard.service.UserService;
-import com.dlnl.deliveryguard.web.DTO.LoginRequest;
-import com.dlnl.deliveryguard.web.DTO.LoginResponse;
-import com.dlnl.deliveryguard.web.DTO.RegistrationRequest;
-import com.dlnl.deliveryguard.web.DTO.TokenResponse;
+import com.dlnl.deliveryguard.web.DTO.*;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +19,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
@@ -540,6 +538,56 @@ class UserServiceTest {
 
             assertEquals("현재 비밀번호가 일치하지 않습니다.", exception.getMessage());
             verify(userRepository, never()).save(testUser);
+        }
+    }
+
+    @Nested
+    @DisplayName("getUserProfile 메서드 테스트")
+    class GetUserProfileTests {
+
+        @Test
+        @DisplayName("사용자 프로필 조회 - 성공")
+        void getUserProfileSuccess() {
+            // given
+            User mockUser = User.builder()
+                    .id(1L)
+                    .loginID("testUser")
+                    .userName("홍길동")
+                    .phoneNumber("010-1234-5678")
+                    .email("user@example.com")
+                    .storeName("길동이네 치킨")
+                    .storeAddress("서울시 강남구 역삼동 123-45")
+                    .build();
+
+            when(userRepository.findByLoginID("testUser")).thenReturn(Optional.of(mockUser));
+
+            // when
+            UserProfileResponse response = userService.getUserProfile("testUser");
+
+            // then
+            assertNotNull(response);
+            assertEquals("홍길동", response.getUserName());
+            assertEquals("010-1234-5678", response.getPhoneNumber());
+            assertEquals("user@example.com", response.getEmail());
+            assertEquals("길동이네 치킨", response.getStoreName());
+            assertEquals("서울시 강남구 역삼동 123-45", response.getStoreAddress());
+
+            verify(userRepository, times(1)).findByLoginID("testUser");
+        }
+
+        @Test
+        @DisplayName("사용자 프로필 조회 - 실패 (사용자를 찾을 수 없음)")
+        void getUserProfileUserNotFound() {
+            // given
+            when(userRepository.findByLoginID("unknownUser")).thenReturn(Optional.empty());
+
+            // when & then
+            UsernameNotFoundException exception = assertThrows(UsernameNotFoundException.class, () -> {
+                userService.getUserProfile("unknownUser");
+            });
+
+            assertEquals("사용자를 찾을 수 없습니다: unknownUser", exception.getMessage());
+            verify(userRepository, times(1)).findByLoginID("unknownUser");
         }
     }
 }
