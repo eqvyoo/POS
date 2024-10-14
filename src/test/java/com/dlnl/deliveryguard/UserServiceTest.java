@@ -1,10 +1,11 @@
 package com.dlnl.deliveryguard;
 
 
-import com.dlnl.deliveryguard.config.PasswordUtil;
+import com.dlnl.deliveryguard.domain.Store;
 import com.dlnl.deliveryguard.domain.Role;
 import com.dlnl.deliveryguard.domain.User;
 import com.dlnl.deliveryguard.jwt.JwtUtil;
+import com.dlnl.deliveryguard.repository.StoreRepository;
 import com.dlnl.deliveryguard.repository.UserRepository;
 import com.dlnl.deliveryguard.service.UserService;
 import com.dlnl.deliveryguard.web.DTO.*;
@@ -35,6 +36,9 @@ class UserServiceTest {
     private UserRepository userRepository;
 
     @Mock
+    private StoreRepository storeRepository;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @Mock
@@ -62,11 +66,16 @@ class UserServiceTest {
             RegistrationRequest request = new RegistrationRequest();
             request.setLoginID("testuser");
             request.setPassword("password123");  // 비밀번호 조건 만족 (영문, 숫자 포함, 8자리 이상)
-            request.setUsername("Test User");
+            request.setUserName("Test User");
             request.setPhoneNumber("01012345678");
             request.setEmail("test@test.com");
             request.setStoreName("Test Store");
             request.setStoreAddress("123 Test Street");
+
+            Store store = Store.builder()
+                    .storeName("Test Store")
+                    .storeAddress("123 Test Street")
+                    .build();
 
             when(userRepository.existsByLoginID("testuser")).thenReturn(false);
             when(userRepository.existsByEmail("test@test.com")).thenReturn(false);
@@ -77,6 +86,7 @@ class UserServiceTest {
 
             // then
             verify(userRepository).save(any(User.class));
+            verify(storeRepository).save(any(Store.class));
         }
     }
 
@@ -130,7 +140,7 @@ class UserServiceTest {
             RegistrationRequest request = new RegistrationRequest();
             request.setLoginID("testuser");
             request.setPassword("pass1");  // 8자리 미만
-            request.setUsername("Test User");
+            request.setUserName("Test User");
             request.setPhoneNumber("01012345678");
             request.setEmail("test@test.com");
             request.setStoreName("Test Store");
@@ -155,7 +165,7 @@ class UserServiceTest {
             RegistrationRequest request = new RegistrationRequest();
             request.setLoginID("testuser");
             request.setPassword("password");  // 숫자 없음
-            request.setUsername("Test User");
+            request.setUserName("Test User");
             request.setPhoneNumber("01012345678");
             request.setEmail("test@test.com");
             request.setStoreName("Test Store");
@@ -180,7 +190,7 @@ class UserServiceTest {
             RegistrationRequest request = new RegistrationRequest();
             request.setLoginID("testuser");
             request.setPassword("12345678");  // 영문 없음
-            request.setUsername("Test User");
+            request.setUserName("Test User");
             request.setPhoneNumber("01012345678");
             request.setEmail("test@test.com");
             request.setStoreName("Test Store");
@@ -548,15 +558,20 @@ class UserServiceTest {
         @Test
         @DisplayName("사용자 프로필 조회 - 성공")
         void getUserProfileSuccess() {
+
             // given
+            Store store = Store.builder()
+                    .storeName("길동이네 치킨")
+                    .storeAddress("서울시 강남구 역삼동 123-45")
+                    .build();
+
             User mockUser = User.builder()
                     .id(1L)
                     .loginID("testUser")
                     .userName("홍길동")
                     .phoneNumber("010-1234-5678")
                     .email("user@example.com")
-                    .storeName("길동이네 치킨")
-                    .storeAddress("서울시 강남구 역삼동 123-45")
+                    .store(store)
                     .build();
 
             when(userRepository.findByLoginID("testUser")).thenReturn(Optional.of(mockUser));
