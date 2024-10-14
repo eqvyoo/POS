@@ -1,6 +1,5 @@
 package com.dlnl.deliveryguard;
 
-
 import com.dlnl.deliveryguard.domain.Store;
 import com.dlnl.deliveryguard.domain.Role;
 import com.dlnl.deliveryguard.domain.User;
