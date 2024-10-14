@@ -9,7 +9,7 @@ import lombok.Setter;
 public class RegistrationRequest {
     private String loginID;
     private String password;
-    private String username;
+    private String userName;
     private String phoneNumber;
     private String email;
     private String storeName;

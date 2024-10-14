@@ -2,8 +2,10 @@ package com.dlnl.deliveryguard.service;
 
 import com.dlnl.deliveryguard.config.PasswordUtil;
 import com.dlnl.deliveryguard.domain.Role;
+import com.dlnl.deliveryguard.domain.Store;
 import com.dlnl.deliveryguard.domain.User;
 import com.dlnl.deliveryguard.jwt.JwtUtil;
+import com.dlnl.deliveryguard.repository.StoreRepository;
 import com.dlnl.deliveryguard.repository.UserRepository;
 import com.dlnl.deliveryguard.web.DTO.*;
 import jakarta.mail.MessagingException;
@@ -30,6 +32,8 @@ import java.util.Optional;
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
+
+    private final StoreRepository storeRepository;
     private final PasswordEncoder passwordEncoder;
 
     private final JavaMailSender mailSender;
@@ -59,20 +63,24 @@ public class UserService implements UserDetailsService {
         }
 
         String encodedPassword = passwordEncoder.encode(registrationRequest.getPassword());
+        Store store = Store.builder()
+                .storeName(registrationRequest.getStoreName())
+                .storeAddress(registrationRequest.getStoreAddress())
+                .build();
 
         User user = User.builder()
                 .loginID(registrationRequest.getLoginID())
                 .password(encodedPassword)
-                .userName(registrationRequest.getUsername())
+                .userName(registrationRequest.getUserName())
                 .phoneNumber(registrationRequest.getPhoneNumber())
                 .email(registrationRequest.getEmail())
-                .storeName(registrationRequest.getStoreName())
-                .storeAddress(registrationRequest.getStoreAddress())
+                .store(store) // User와 Store 연결
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .role(Role.USER)
                 .build();
 
+        storeRepository.save(store);
         userRepository.save(user);
     }
 
@@ -256,13 +264,16 @@ public class UserService implements UserDetailsService {
         User user = userRepository.findByLoginID(loginID)
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + loginID));
 
+// User의 Store 정보 가져오기
+        Store store = user.getStore();
+
         // UserProfileResponse로 변환하여 반환
         return UserProfileResponse.builder()
                 .userName(user.getUserName())
                 .phoneNumber(user.getPhoneNumber())
                 .email(user.getEmail())
-                .storeName(user.getStoreName())
-                .storeAddress(user.getStoreAddress())
+                .storeName(store != null ? store.getStoreName() : null)
+                .storeAddress(store != null ? store.getStoreAddress() : null)
                 .build();
     }
 

@@ -39,12 +39,6 @@ public class User {
     @Column(name = "email")
     private String email;
 
-    @Column(name = "store_name")
-    private String storeName;
-
-    @Column(name = "store_address")
-    private String storeAddress;
-
     @Column(name = "refresh_token")
     private String refreshToken;
 
@@ -61,6 +55,10 @@ public class User {
     private Role role;
     @OneToMany(mappedBy = "owner")
     private List<Order> orders;
+
+    @OneToOne
+    @JoinColumn(name = "store_id")
+    private Store store;
     public void updateRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
     }
