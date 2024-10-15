@@ -1,12 +1,10 @@
 package com.dlnl.deliveryguard.service;
 
 import com.dlnl.deliveryguard.config.SecurityUtil;
-import com.dlnl.deliveryguard.domain.Customer;
-import com.dlnl.deliveryguard.domain.Store;
-import com.dlnl.deliveryguard.domain.User;
-import com.dlnl.deliveryguard.domain.Address;
+import com.dlnl.deliveryguard.domain.*;
 import com.dlnl.deliveryguard.repository.CustomerRepository;
 
+import com.dlnl.deliveryguard.repository.OrderRepository;
 import com.dlnl.deliveryguard.repository.StoreRepository;
 import com.dlnl.deliveryguard.repository.UserRepository;
 import com.dlnl.deliveryguard.web.DTO.CustomerDetailResponse;
@@ -27,6 +25,8 @@ public class CustomerService {
     private final CustomerRepository customerRepository;
     private final StoreRepository storeRepository;
 
+    private final OrderRepository orderRepository;
+
     private final UserRepository userRepository;
 
     public CustomerListResponse getCustomers(String nickname, String phoneNumber, String address, Pageable pageable) {
@@ -41,7 +41,6 @@ public class CustomerService {
             throw new RuntimeException("해당 사용자에게 연결된 가게가 없습니다.");
         }
 
-        // StoreDTO 생성 (한번만 생성)
         CustomerListResponse.StoreDTO storeDTO = CustomerListResponse.StoreDTO.builder()
                 .id(store.getId())
                 .storeName(store.getStoreName())
@@ -92,6 +91,26 @@ public class CustomerService {
                 .addresses(addressList)
                 .build();
     }
+    @Transactional
+    public void updateCustomerPhoneNumber(String orderNumber, String orderPlatform, String newPhoneNumber) {
+        // 주문번호와 주문 플랫폼을 기준으로 주문 조회
+        Order order = orderRepository.findByOrderNumberAndOrderPlatform(orderNumber, orderPlatform)
+                .orElseThrow(() -> new RuntimeException("해당 주문을 찾을 수 없습니다."));
 
+        // 주문의 고객 정보 가져오기
+        Customer customer = order.getCustomer();
+
+        if (customer == null) {
+            throw new RuntimeException("해당 주문에 연결된 고객이 없습니다.");
+        }
+
+        // 고객의 연락처를 010으로 변경
+        if (newPhoneNumber != null && newPhoneNumber.startsWith("010")) {
+            customer.updatePhoneNumber(newPhoneNumber);
+            customerRepository.save(customer);
+        } else {
+            throw new IllegalArgumentException("잘못된 전화번호 형식입니다. 010으로 시작하는 번호여야 합니다.");
+        }
+    }
 
 }

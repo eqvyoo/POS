@@ -39,4 +39,8 @@ public class Customer {
     @JoinColumn(name = "store_id")
     @JsonIgnoreProperties({"customers"})
     private Store store;
+
+    public void updatePhoneNumber(String newPhoneNumber) {
+        this.phoneNumber = newPhoneNumber;
+    }
 }
