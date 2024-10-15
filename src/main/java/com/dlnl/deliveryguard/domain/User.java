@@ -1,5 +1,7 @@
 package com.dlnl.deliveryguard.domain;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,9 +11,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
 @Getter
 @Builder
@@ -58,6 +58,7 @@ public class User {
 
     @OneToOne
     @JoinColumn(name = "store_id")
+    @JsonBackReference  // 순환 참조 방지를 위해 직렬화에서 제외되는 쪽
     private Store store;
     public void updateRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;

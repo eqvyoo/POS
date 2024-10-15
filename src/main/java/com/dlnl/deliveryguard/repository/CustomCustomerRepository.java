@@ -5,6 +5,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface CustomCustomerRepository {
-    Page<Customer> searchCustomers(String nickname, String phoneNumber, String address, Long storeId, Pageable pageable);
+    Page<Customer> searchCustomersByStore(Long storeId, String nickname, String phoneNumber, String address, Pageable pageable);
 }
 

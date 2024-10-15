@@ -1,10 +1,16 @@
 package com.dlnl.deliveryguard.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Builder
@@ -23,6 +29,12 @@ public class Store {
     @Column(name = "store_address")
     private String storeAddress;
 
-    @OneToOne(mappedBy = "store")
+    @OneToOne
+    @JoinColumn(name = "owner_id")
+    @JsonIgnore  // owner 필드를 직렬화에서 제외
     private User owner;
+
+    @OneToMany(mappedBy = "store", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties({"store"})
+    private List<Customer> customers = new ArrayList<>();
 }
