@@ -2,15 +2,13 @@ package com.dlnl.deliveryguard.web.Controller;
 
 import com.dlnl.deliveryguard.domain.Customer;
 import com.dlnl.deliveryguard.service.CustomerService;
+import com.dlnl.deliveryguard.web.DTO.CustomerDetailResponse;
 import com.dlnl.deliveryguard.web.DTO.CustomerListResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/customers")
@@ -34,4 +32,11 @@ public class CustomerController {
         CustomerListResponse customerResponse = customerService.getCustomers(nickname, phoneNumber, address, pageable);
         return ResponseEntity.ok(customerResponse);
     }
+
+    @GetMapping("/detail/{customerID}")
+    public ResponseEntity<CustomerDetailResponse> getCustomerDetail(@PathVariable String customerID) {
+        CustomerDetailResponse customerDetail = customerService.getCustomerDetail(customerID);
+        return ResponseEntity.ok(customerDetail);
+    }
+
 }

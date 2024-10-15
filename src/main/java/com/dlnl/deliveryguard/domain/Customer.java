@@ -26,9 +26,12 @@ public class Customer {
     @Column(name = "nickname")
     private String nickname;
 
+    @Column(name = "customer_id")
+    private String customerID;
+
     @Column(name = "phone_number")
     private String phoneNumber;
-
+    @Builder.Default
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Address> addresses = new ArrayList<>();
 

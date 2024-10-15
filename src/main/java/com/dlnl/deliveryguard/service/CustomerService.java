@@ -4,10 +4,12 @@ import com.dlnl.deliveryguard.config.SecurityUtil;
 import com.dlnl.deliveryguard.domain.Customer;
 import com.dlnl.deliveryguard.domain.Store;
 import com.dlnl.deliveryguard.domain.User;
+import com.dlnl.deliveryguard.domain.Address;
 import com.dlnl.deliveryguard.repository.CustomerRepository;
 
 import com.dlnl.deliveryguard.repository.StoreRepository;
 import com.dlnl.deliveryguard.repository.UserRepository;
+import com.dlnl.deliveryguard.web.DTO.CustomerDetailResponse;
 import com.dlnl.deliveryguard.web.DTO.CustomerListResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -73,4 +75,23 @@ public class CustomerService {
                 .customers(customerDTOs)  // 고객 목록
                 .build();
     }
+
+    public CustomerDetailResponse getCustomerDetail(String customerID) {
+        Customer customer = customerRepository.findByCustomerID(customerID)
+                .orElseThrow(() -> new RuntimeException("해당 고객을 찾을 수 없습니다."));
+
+        List<String> addressList = customer.getAddresses().stream()
+                .map(Address::getAddress)
+                .collect(Collectors.toList());
+
+
+        return CustomerDetailResponse.builder()
+                .customerID(customer.getCustomerID())
+                .nickname(customer.getNickname())
+                .phoneNumber(customer.getPhoneNumber())
+                .addresses(addressList)
+                .build();
+    }
+
+
 }

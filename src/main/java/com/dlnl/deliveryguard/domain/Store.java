@@ -36,5 +36,6 @@ public class Store {
 
     @OneToMany(mappedBy = "store", cascade = CascadeType.ALL)
     @JsonIgnoreProperties({"store"})
+    @Builder.Default
     private List<Customer> customers = new ArrayList<>();
 }

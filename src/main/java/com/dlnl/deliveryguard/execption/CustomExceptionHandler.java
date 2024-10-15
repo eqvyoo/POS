@@ -16,14 +16,13 @@ public class CustomExceptionHandler {
     public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex, WebRequest request) {
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .status(HttpStatus.NOT_FOUND.value())
-                .message("요청하신 데이터를 찾을 수 없습니다.") // 사용자에게 더 친절한 메시지 제공
+                .message("요청하신 데이터를 찾을 수 없습니다.")
                 .path(request.getDescription(false))
                 .build();
 
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
 
-    // 그 외의 예외를 처리하는 핸들러
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleAllExceptions(Exception ex, WebRequest request) {
         ErrorResponse errorResponse = ErrorResponse.builder()
