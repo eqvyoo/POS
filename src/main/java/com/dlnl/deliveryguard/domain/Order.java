@@ -48,6 +48,10 @@ public class Order {
     @Column(name = "rider_request_time")
     private LocalDateTime riderRequestTime;
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User owner;
+    @JoinColumn(name = "customer_id") // 고객과의 관계
+    private Customer customer; // 주문을 한 고객
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "store_id") // Store와의 관계
+    private Store store; // 주문이 속한 Store
 }

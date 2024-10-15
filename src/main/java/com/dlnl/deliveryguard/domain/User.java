@@ -53,8 +53,6 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
-    @OneToMany(mappedBy = "owner")
-    private List<Order> orders;
 
     @OneToOne
     @JoinColumn(name = "store_id")
