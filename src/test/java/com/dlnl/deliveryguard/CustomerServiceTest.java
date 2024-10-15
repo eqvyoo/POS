@@ -1,17 +1,25 @@
 package com.dlnl.deliveryguard;
 
-import com.dlnl.deliveryguard.domain.Address;
-import com.dlnl.deliveryguard.domain.Customer;
+import com.dlnl.deliveryguard.config.SecurityUtil;
+import com.dlnl.deliveryguard.domain.*;
 import com.dlnl.deliveryguard.repository.CustomerRepository;
+import com.dlnl.deliveryguard.repository.OrderRepository;
+import com.dlnl.deliveryguard.repository.UserRepository;
 import com.dlnl.deliveryguard.service.CustomerService;
 import com.dlnl.deliveryguard.web.DTO.CustomerDetailResponse;
+import com.dlnl.deliveryguard.web.DTO.CustomerListResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,6 +38,12 @@ class CustomerServiceTest {
 
     @InjectMocks
     private CustomerService customerService;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private OrderRepository orderRepository;
 
     @BeforeEach
     void setUp() {
@@ -95,4 +109,72 @@ class CustomerServiceTest {
             verify(customerRepository, times(1)).findByCustomerID(anyString());
         }
     }
+
+    @Test
+    @DisplayName("정상적으로 고객의 전화번호가 업데이트됨")
+    void updateCustomerPhoneNumber_Success() {
+        // Given
+        String orderNumber = "12345";
+        String orderPlatform = "배달의민족";
+        String newPhoneNumber = "01098765432";
+
+        Customer customer = Customer.builder()
+                .id(1L)
+                .nickname("John Doe")
+                .phoneNumber("01012345678")
+                .build();
+
+        Order order = Order.builder()
+                .id(1L)
+                .orderNumber(orderNumber)
+                .orderPlatform(orderPlatform)
+                .customer(customer)
+                .build();
+
+        // Mocking
+        when(orderRepository.findByOrderNumberAndOrderPlatform(orderNumber, orderPlatform))
+                .thenReturn(Optional.of(order));
+
+        // When
+        customerService.updateCustomerPhoneNumber(orderNumber, orderPlatform, newPhoneNumber);
+
+        // Then
+        assertEquals(newPhoneNumber, customer.getPhoneNumber());
+        verify(customerRepository, times(1)).save(customer);
+    }
+
+    @Test
+    @DisplayName("잘못된 전화번호 형식일 때 예외 발생")
+    void updateCustomerPhoneNumber_InvalidPhoneNumber() {
+        // Given
+        String orderNumber = "12345";
+        String orderPlatform = "배달의민족";
+        String invalidPhoneNumber = "0123456789"; // 잘못된 번호
+
+        Customer customer = Customer.builder()
+                .id(1L)
+                .nickname("John Doe")
+                .phoneNumber("01012345678")
+                .build();
+
+        Order order = Order.builder()
+                .id(1L)
+                .orderNumber(orderNumber)
+                .orderPlatform(orderPlatform)
+                .customer(customer)
+                .build();
+
+        // Mocking
+        when(orderRepository.findByOrderNumberAndOrderPlatform(orderNumber, orderPlatform))
+                .thenReturn(Optional.of(order));
+
+        // When & Then
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            customerService.updateCustomerPhoneNumber(orderNumber, orderPlatform, invalidPhoneNumber);
+        });
+
+        assertEquals("잘못된 전화번호 형식입니다. 010으로 시작하는 번호여야 합니다.", exception.getMessage());
+        verify(customerRepository, never()).save(any(Customer.class)); // 저장 시도 없음
+    }
+
 }
