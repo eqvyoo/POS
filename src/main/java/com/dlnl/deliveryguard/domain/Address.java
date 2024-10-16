@@ -8,6 +8,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Builder
 @AllArgsConstructor
@@ -27,4 +30,7 @@ public class Address {
     @JoinColumn(name = "customer_id")
     @JsonIgnore
     private Customer customer;
+    @Builder.Default
+    @OneToMany(mappedBy = "address", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Order> orders = new ArrayList<>(); // 한 주소는 여러 주문과 연결될 수 있음
 }

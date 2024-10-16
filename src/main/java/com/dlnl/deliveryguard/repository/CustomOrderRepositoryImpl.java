@@ -15,7 +15,6 @@ import org.springframework.data.domain.Pageable;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
-
 public class CustomOrderRepositoryImpl implements CustomOrderRepository {
 
     @PersistenceContext
@@ -36,7 +35,7 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                 .leftJoin(order.orderMenus, orderMenu)
                 .leftJoin(orderMenu.menu, menu)
                 .leftJoin(order.customer, customer)
-                .leftJoin(customer.addresses, address)
+                .leftJoin(order.address, address)  // 주문에 연결된 주소 조인
                 .where(
                         order.store.id.eq(storeId),
                         orderDateTimeEq(order, criteria.getOrderDateTime()),
@@ -70,7 +69,7 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                         .orderType(o.getOrderType())
                         .status(o.getStatus())
                         .paymentAmount(o.getPaymentAmount())
-                        .address(o.getCustomer().getAddresses().isEmpty() ? null : o.getCustomer().getAddresses().get(0).getAddress())
+                        .address(o.getAddress().getAddress())  // 주문에 연결된 주소 출력
                         .estimatedCookingTime(o.getEstimatedCookingTime())
                         .deliveryAgency(o.getDeliveryAgency())
                         .riderRequestTime(o.getRiderRequestTime())
@@ -96,8 +95,6 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
         return new PageImpl<>(results, pageable, total);
     }
 
-
-
     private BooleanExpression orderDateTimeEq(QOrder order, LocalDateTime orderDateTime) {
         return orderDateTime != null ? order.orderDateTime.eq(orderDateTime) : null;
     }
@@ -115,6 +112,7 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                         .and(orderMenu.order.id.eq(order.id)))  // 주문과 메뉴의 관계를 확인
                 .exists();
     }
+
     private BooleanExpression customerPhoneNumberContains(QOrder order, String phoneNumber) {
         return phoneNumber != null ? order.CustomerPhoneNumber.contains(phoneNumber) : null;
     }

@@ -29,7 +29,7 @@ public class Menu {
 
     @Column(name = "quantity")
     private Integer quantity;
-
+    @Builder.Default
     @OneToMany(mappedBy = "menu", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderMenu> orderMenus = new ArrayList<>();
 }

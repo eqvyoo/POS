@@ -25,6 +25,7 @@ public class Order {
     private Long id;
     @Column(name = "order_date_time")
     private LocalDateTime orderDateTime;
+    @Builder.Default
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderMenu> orderMenus = new ArrayList<>();
     @Column(name = "customer_phone_number")
@@ -56,4 +57,8 @@ public class Order {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "store_id") // Store와의 관계
     private Store store; // 주문이 속한 Store
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "address_id")  // 배달 주소
+    private Address address;  // 주문에 할당된 주소
 }
