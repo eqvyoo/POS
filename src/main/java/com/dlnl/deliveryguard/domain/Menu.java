@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Builder
@@ -27,4 +29,7 @@ public class Menu {
 
     @Column(name = "quantity")
     private Integer quantity;
+
+    @OneToMany(mappedBy = "menu", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderMenu> orderMenus = new ArrayList<>();
 }

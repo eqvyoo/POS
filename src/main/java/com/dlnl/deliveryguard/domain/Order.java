@@ -9,6 +9,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.sql.Time;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -24,9 +25,8 @@ public class Order {
     private Long id;
     @Column(name = "order_date_time")
     private LocalDateTime orderDateTime;
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id")
-    private List<Menu> menus;
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderMenu> orderMenus = new ArrayList<>();
     @Column(name = "customer_phone_number")
     private String CustomerPhoneNumber;
     @Column(name = "order_platform")

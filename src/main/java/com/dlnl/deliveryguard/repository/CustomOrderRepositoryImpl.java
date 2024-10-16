@@ -28,11 +28,13 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
         QMenu menu = QMenu.menu;
         QCustomer customer = QCustomer.customer;
         QAddress address = QAddress.address1;  // 추가된 주소 정보
+        QOrderMenu orderMenu = QOrderMenu.orderMenu;
 
         List<OrderListResponse> results = queryFactory
                 .select(order)
                 .from(order)
-                .leftJoin(order.menus, menu)
+                .leftJoin(order.orderMenus, orderMenu)
+                .leftJoin(orderMenu.menu, menu)
                 .leftJoin(order.customer, customer)
                 .leftJoin(customer.addresses, address)
                 .where(
@@ -53,10 +55,10 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                 .stream()
                 .map(o -> OrderListResponse.builder()
                         .orderDateTime(o.getOrderDateTime())
-                        .menus(o.getMenus().stream()
-                                .map(m -> OrderListResponse.MenuWithQuantity.builder()
-                                        .menuName(m.getName())
-                                        .quantity(m.getQuantity())
+                        .menus(o.getOrderMenus().stream()
+                                .map(om -> OrderListResponse.MenuWithQuantity.builder()
+                                        .menuName(om.getMenu().getName())
+                                        .quantity(om.getQuantity())
                                         .build())
                                 .collect(Collectors.toList()))
                         .customerPhoneNumber(o.getCustomerPhoneNumber())
@@ -104,7 +106,14 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
         if (menuName == null) {
             return null;
         }
-        return order.menus.any().name.containsIgnoreCase(menuName);
+        QOrderMenu orderMenu = QOrderMenu.orderMenu;
+        QMenu menu = QMenu.menu;
+        return JPAExpressions.selectOne()
+                .from(orderMenu)
+                .join(orderMenu.menu, menu)
+                .where(menu.name.containsIgnoreCase(menuName)
+                        .and(orderMenu.order.id.eq(order.id)))  // 주문과 메뉴의 관계를 확인
+                .exists();
     }
     private BooleanExpression customerPhoneNumberContains(QOrder order, String phoneNumber) {
         return phoneNumber != null ? order.CustomerPhoneNumber.contains(phoneNumber) : null;

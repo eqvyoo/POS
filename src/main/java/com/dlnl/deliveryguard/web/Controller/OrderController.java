@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.PagedModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -26,17 +29,22 @@ public class OrderController {
     private final UserService userService;
 
     @GetMapping("/search")
-    public ResponseEntity<Page<OrderListResponse>> searchOrders(@AuthenticationPrincipal UserDetails userDetails,
-                                                                OrderSearchCriteria criteria,
-                                                                @PageableDefault(size = 10) Pageable pageable) {
+    public ResponseEntity<PagedModel<EntityModel<OrderListResponse>>> searchOrders(
+            @AuthenticationPrincipal UserDetails userDetails,
+            OrderSearchCriteria criteria,
+            @PageableDefault(size = 10) Pageable pageable,
+            PagedResourcesAssembler<OrderListResponse> assembler) {
+
         try {
             Long userId = userService.getUserIdFromUserDetails(userDetails);
             User user = userService.findUserById(userId);
 
-            // 검색 조건과 사용자 정보, 페이징 정보를 사용하여 검색합니다.
             Page<OrderListResponse> orders = orderService.searchOrders(criteria, pageable, user);
 
-            return ResponseEntity.ok(orders);
+            // Page<OrderListResponse>를 PagedModel<EntityModel<OrderListResponse>>로 변환
+            PagedModel<EntityModel<OrderListResponse>> pagedModel = assembler.toModel(orders);
+
+            return ResponseEntity.ok(pagedModel);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
