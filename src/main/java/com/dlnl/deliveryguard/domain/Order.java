@@ -36,9 +36,11 @@ public class Order {
     @Column(name = "payment_method")
     private String paymentMethod;
     @Column(name = "order_type")
-    private String orderType;
+    @Enumerated(EnumType.STRING)
+    private OrderType orderType;
     @Column(name = "status")
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private Status status;
     @Column(name = "payment_amount")
     private String paymentAmount;
     @Column(name = "estimated_cooking_time")

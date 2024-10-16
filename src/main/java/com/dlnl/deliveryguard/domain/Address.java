@@ -25,6 +25,6 @@ public class Address {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id")
-    @JsonIgnore  // 이 부분을 추가하여 직렬화 중 무한 루프 방지
+    @JsonIgnore
     private Customer customer;
 }

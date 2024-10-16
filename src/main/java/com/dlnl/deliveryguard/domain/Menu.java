@@ -25,6 +25,6 @@ public class Menu {
     @Column(name = "price")
     private String price;
 
-    @Column(name = "amount")
-    private Integer amount;
+    @Column(name = "quantity")
+    private Integer quantity;
 }
