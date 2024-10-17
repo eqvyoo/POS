@@ -1,6 +1,7 @@
 package com.dlnl.deliveryguard.service;
 
 import com.dlnl.deliveryguard.domain.SmsSendCondition;
+import com.dlnl.deliveryguard.domain.SmsSendHistory;
 import com.dlnl.deliveryguard.domain.User;
 import com.dlnl.deliveryguard.repository.SmsSendConditionRepository;
 import com.dlnl.deliveryguard.repository.SmsSendHistoryRepository;
@@ -17,7 +18,7 @@ public class SmsService {
     private final SmsSendHistoryRepository historyRepository;
 
     public List<SmsSendCondition> getSendConditionsByUserId(Long userId) {
-        return conditionRepository.findByUserId(userId);
+        return conditionRepository.findByUserIdAndIsDeletedFalse(userId);
     }
 
     public SmsSendCondition createSmsCondition(SmsSendCondition condition, User user) {
@@ -52,4 +53,15 @@ public class SmsService {
             throw new RuntimeException("문자 전송 조건이 정상적으로 삭제되지 않았습니다.");
         }
     }
+    public SmsSendHistory createSmsSendHistory(SmsSendHistory sendHistoryDetails, User user) {
+        try {
+            sendHistoryDetails.updateUser(user);
+            SmsSendHistory savedHistory = historyRepository.save(sendHistoryDetails);
+
+            return savedHistory;
+        } catch (Exception e) {
+            throw new RuntimeException("문자 전송 내역 저장 중 문제가 발생했습니다. 다시 시도해주세요.");
+        }
+    }
+
 }

@@ -1,6 +1,7 @@
 package com.dlnl.deliveryguard.web.Controller;
 
 import com.dlnl.deliveryguard.domain.SmsSendCondition;
+import com.dlnl.deliveryguard.domain.SmsSendHistory;
 import com.dlnl.deliveryguard.domain.User;
 import com.dlnl.deliveryguard.service.SmsService;
 import com.dlnl.deliveryguard.service.UserService;
@@ -54,6 +55,15 @@ public class SmsController {
         User user = userService.findUserById(userId);
         smsService.deleteSmsCondition(id, user);
         return ResponseEntity.ok("문자 전송 조건 삭제가 완료되었습니다.");
+    }
+
+    @PostMapping("/create-send-history")
+    public ResponseEntity<SmsSendHistory> createSendHistory(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody SmsSendHistory sendHistoryDetails) {
+        Long userId = userService.getUserIdFromUserDetails(userDetails);
+        User user = userService.findUserById(userId);
+        return ResponseEntity.ok(smsService.createSmsSendHistory(sendHistoryDetails, user));
     }
 
 

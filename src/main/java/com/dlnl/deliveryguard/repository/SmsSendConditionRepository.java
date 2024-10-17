@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface SmsSendConditionRepository extends JpaRepository<SmsSendCondition, Long> {
     List<SmsSendCondition> findByUserId(Long userId);
+
+    List<SmsSendCondition> findByUserIdAndIsDeletedFalse(Long userId);
 }
