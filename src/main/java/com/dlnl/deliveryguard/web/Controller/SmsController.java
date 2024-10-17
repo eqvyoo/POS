@@ -46,6 +46,16 @@ public class SmsController {
         return ResponseEntity.ok(smsService.updateSmsCondition(id, conditionDetails, user));
     }
 
+    @DeleteMapping("/delete-condition/{id}")
+    public ResponseEntity<String> deleteCondition(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long id) {
+        Long userId = userService.getUserIdFromUserDetails(userDetails);
+        User user = userService.findUserById(userId);
+        smsService.deleteSmsCondition(id, user);
+        return ResponseEntity.ok("문자 전송 조건 삭제가 완료되었습니다.");
+    }
+
 
 
 }

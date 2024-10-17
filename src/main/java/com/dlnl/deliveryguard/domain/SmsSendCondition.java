@@ -40,6 +40,9 @@ public class SmsSendCondition {
     @JoinColumn(name = "user_id", nullable = false)
     @JsonIgnore
     private User user;
+    //todo : 전체 문자 전송 조건 내역 조회 시 is deleted = false만 조회하도록 바꾸기
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
 
     public void updateUser(User user){
         this.user = user;
@@ -47,6 +50,11 @@ public class SmsSendCondition {
 
     public void updateSendCondition(String sendCondition){
         this.sendCondition = sendCondition;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void markAsDeleted() {
+        this.isDeleted = true;
         this.updatedAt = LocalDateTime.now();
     }
 

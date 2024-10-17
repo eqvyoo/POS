@@ -40,4 +40,16 @@ public class SmsService {
             throw new RuntimeException("조건을 찾을 수 없습니다.");
         }
     }
+
+    public void deleteSmsCondition(Long id, User user) {
+        Optional<SmsSendCondition> existingCondition = conditionRepository.findById(id);
+
+        if (existingCondition.isPresent() && existingCondition.get().getUser().getId().equals(user.getId())) {
+            SmsSendCondition condition = existingCondition.get();
+            condition.markAsDeleted();
+            conditionRepository.save(condition);
+        } else {
+            throw new RuntimeException("문자 전송 조건이 정상적으로 삭제되지 않았습니다.");
+        }
+    }
 }
