@@ -61,4 +61,7 @@ public class Order {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "address_id")  // 배달 주소
     private Address address;  // 주문에 할당된 주소
+
+    private String receiptData;
+
 }

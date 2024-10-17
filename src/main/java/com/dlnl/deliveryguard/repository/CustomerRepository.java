@@ -10,4 +10,6 @@ import java.util.Optional;
 @Repository
 public interface CustomerRepository extends JpaRepository<Customer, Long>, QuerydslPredicateExecutor<Customer>, CustomCustomerRepository {
     Optional<Customer> findByCustomerID(String customerID);
+
+    Optional<Customer> findByPhoneNumber(String customerPhoneNumber);
 }
