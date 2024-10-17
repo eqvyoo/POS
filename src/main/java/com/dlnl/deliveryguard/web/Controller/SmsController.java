@@ -11,6 +11,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -64,6 +65,17 @@ public class SmsController {
         Long userId = userService.getUserIdFromUserDetails(userDetails);
         User user = userService.findUserById(userId);
         return ResponseEntity.ok(smsService.createSmsSendHistory(sendHistoryDetails, user));
+    }
+
+    @GetMapping("/search-send-history")
+    public ResponseEntity<List<SmsSendHistory>> searchSendHistory(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(required = false) String customerContact,
+            @RequestParam(required = false) LocalDateTime sendTime,
+            @RequestParam(required = false) String sendStatus) {
+        Long userId = userService.getUserIdFromUserDetails(userDetails);
+        List<SmsSendHistory> result = smsService.searchSmsSendHistory(userId, customerContact, sendTime, sendStatus);
+        return ResponseEntity.ok(result);
     }
 
 
