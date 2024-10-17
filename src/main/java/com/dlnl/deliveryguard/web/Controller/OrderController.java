@@ -3,6 +3,7 @@ package com.dlnl.deliveryguard.web.Controller;
 import com.dlnl.deliveryguard.domain.User;
 import com.dlnl.deliveryguard.service.OrderService;
 import com.dlnl.deliveryguard.service.UserService;
+import com.dlnl.deliveryguard.web.DTO.OrderDetailResponse;
 import com.dlnl.deliveryguard.web.DTO.OrderListResponse;
 import com.dlnl.deliveryguard.web.DTO.OrderSearchCriteria;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -46,6 +48,22 @@ public class OrderController {
             return ResponseEntity.ok(pagedModel);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/{orderId}")
+    public ResponseEntity<OrderDetailResponse> getOrderDetail(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            Long userId = userService.getUserIdFromUserDetails(userDetails);
+            User user = userService.findUserById(userId);
+
+            OrderDetailResponse orderDetail = orderService.getOrderDetail(orderId, user);
+            return ResponseEntity.ok(orderDetail);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }
 }
