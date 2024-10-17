@@ -36,6 +36,18 @@ public class SmsController {
         return ResponseEntity.ok(smsService.createSmsCondition(condition, user));
     }
 
+    @PutMapping("/update-condition/{id}")
+    public ResponseEntity<SmsSendCondition> updateCondition(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long id,
+            @RequestBody SmsSendCondition conditionDetails) {
+        Long userId = userService.getUserIdFromUserDetails(userDetails);
+        User user = userService.findUserById(userId);
+        return ResponseEntity.ok(smsService.updateSmsCondition(id, conditionDetails, user));
+    }
+
+
+
 }
 
 

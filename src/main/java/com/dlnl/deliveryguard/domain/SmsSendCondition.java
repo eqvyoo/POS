@@ -44,4 +44,14 @@ public class SmsSendCondition {
     public void updateUser(User user){
         this.user = user;
     }
+
+    public void updateSendCondition(String sendCondition){
+        this.sendCondition = sendCondition;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void updateMessageContent(String messageContent){
+        this.messageContent = messageContent;
+        this.updatedAt = LocalDateTime.now();
+    }
 }

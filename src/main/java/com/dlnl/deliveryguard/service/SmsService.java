@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -22,5 +23,21 @@ public class SmsService {
     public SmsSendCondition createSmsCondition(SmsSendCondition condition, User user) {
         condition.updateUser(user);
         return conditionRepository.save(condition);
+    }
+
+    public SmsSendCondition updateSmsCondition(Long id, SmsSendCondition conditionDetails, User user) {
+        Optional<SmsSendCondition> existingConditionOpt = conditionRepository.findById(id);
+
+        if (existingConditionOpt.isPresent() && existingConditionOpt.get().getUser().getId().equals(user.getId())) {
+            SmsSendCondition existingCondition = existingConditionOpt.get();
+
+            existingCondition.updateSendCondition(conditionDetails.getSendCondition());
+            existingCondition.updateMessageContent(conditionDetails.getMessageContent());
+            existingCondition.updateUser(user);
+
+            return conditionRepository.save(existingCondition);
+        } else {
+            throw new RuntimeException("조건을 찾을 수 없습니다.");
+        }
     }
 }
