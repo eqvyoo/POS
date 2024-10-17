@@ -26,20 +26,21 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
         QOrder order = QOrder.order;
         QMenu menu = QMenu.menu;
         QCustomer customer = QCustomer.customer;
-        QAddress address = QAddress.address1;  // 추가된 주소 정보
+        QAddress address = QAddress.address1;
         QOrderMenu orderMenu = QOrderMenu.orderMenu;
 
+        // fetch join을 사용하여 관련 데이터를 모두 가져옵니다.
         List<OrderListResponse> results = queryFactory
                 .select(order)
                 .from(order)
-                .leftJoin(order.orderMenus, orderMenu)
-                .leftJoin(orderMenu.menu, menu)
-                .leftJoin(order.customer, customer)
-                .leftJoin(order.address, address)  // 주문에 연결된 주소 조인
+                .leftJoin(order.orderMenus, orderMenu).fetchJoin() // fetch join
+                .leftJoin(orderMenu.menu, menu).fetchJoin() // fetch join
+                .leftJoin(order.customer, customer).fetchJoin() // fetch join
+                .leftJoin(order.address, address).fetchJoin() // fetch join
                 .where(
                         order.store.id.eq(storeId),
                         orderDateTimeEq(order, criteria.getOrderDateTime()),
-                        menuNameContains(order, criteria.getMenuName()),  // 메뉴명 검색 조건 추가
+                        menuNameContains(order, criteria.getMenuName()),
                         customerPhoneNumberContains(order, criteria.getCustomerPhoneNumber()),
                         orderNumberContains(order, criteria.getOrderNumber()),
                         orderPlatformEq(order, criteria.getOrderPlatform()),
@@ -81,7 +82,7 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                 .where(
                         order.store.id.eq(storeId),
                         orderDateTimeEq(order, criteria.getOrderDateTime()),
-                        menuNameContains(order, criteria.getMenuName()),  // 메뉴명 검색 조건 추가
+                        menuNameContains(order, criteria.getMenuName()),
                         customerPhoneNumberContains(order, criteria.getCustomerPhoneNumber()),
                         orderNumberContains(order, criteria.getOrderNumber()),
                         orderPlatformEq(order, criteria.getOrderPlatform()),
@@ -94,7 +95,6 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
 
         return new PageImpl<>(results, pageable, total);
     }
-
     private BooleanExpression orderDateTimeEq(QOrder order, LocalDateTime orderDateTime) {
         return orderDateTime != null ? order.orderDateTime.eq(orderDateTime) : null;
     }

@@ -41,7 +41,6 @@ public class OrderController {
 
             Page<OrderListResponse> orders = orderService.searchOrders(criteria, pageable, user);
 
-            // Page<OrderListResponse>를 PagedModel<EntityModel<OrderListResponse>>로 변환
             PagedModel<EntityModel<OrderListResponse>> pagedModel = assembler.toModel(orders);
 
             return ResponseEntity.ok(pagedModel);
