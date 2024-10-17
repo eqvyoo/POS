@@ -40,4 +40,8 @@ public class SmsSendCondition {
     @JoinColumn(name = "user_id", nullable = false)
     @JsonIgnore
     private User user;
+
+    public void updateUser(User user){
+        this.user = user;
+    }
 }

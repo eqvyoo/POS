@@ -44,4 +44,8 @@ public class SmsSendHistory {
     @JoinColumn(name = "user_id", nullable = false)
     @JsonIgnore
     private User user;
+
+    public void updateUser(User user){
+        this.user = user;
+    }
 }
