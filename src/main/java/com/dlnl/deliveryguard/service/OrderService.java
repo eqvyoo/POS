@@ -143,6 +143,31 @@ public class OrderService {
 
     }
 
+    @Transactional
+    public void cancelOrder(Long orderId, String cancelReason, User user) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다. ID: " + orderId));
+
+        if (!order.getStore().getOwner().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("해당 주문에 대한 접근 권한이 없습니다.");
+        }
+
+        // 배달 플랫폼이 'vroong'인 경우만 배달 취소 API 호출
+        if ("vroong".equalsIgnoreCase(order.getDeliveryAgency())) {
+            String deliveryId = getDeliveryIdByOrderId(orderId);
+            deliveryPlatformService.cancelDelivery(deliveryId);
+        }
+
+        order.updateStatus(Status.CANCELED);
+        order.updateCancelReason(cancelReason);
+        orderRepository.save(order);
+    }
+
+    public String getDeliveryIdByOrderId(Long orderId) {
+        return orderRepository.findById(orderId)
+                .map(Order::getDeliveryId)
+                .orElseThrow(() -> new IllegalArgumentException("배달 ID를 찾을 수 없습니다. 주문 ID: " + orderId));
+    }
 
 
 }

@@ -1,12 +1,10 @@
 package com.dlnl.deliveryguard.web.Controller;
 
 import com.dlnl.deliveryguard.domain.User;
+import com.dlnl.deliveryguard.service.DeliveryPlatformService;
 import com.dlnl.deliveryguard.service.OrderService;
 import com.dlnl.deliveryguard.service.UserService;
-import com.dlnl.deliveryguard.web.DTO.OrderCreateRequest;
-import com.dlnl.deliveryguard.web.DTO.OrderDetailResponse;
-import com.dlnl.deliveryguard.web.DTO.OrderListResponse;
-import com.dlnl.deliveryguard.web.DTO.OrderSearchCriteria;
+import com.dlnl.deliveryguard.web.DTO.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +25,8 @@ public class OrderController {
     private final OrderService orderService;
 
     private final UserService userService;
+
+    private final DeliveryPlatformService deliveryPlatformService;
 
     @GetMapping("/search")
     public ResponseEntity<PagedModel<EntityModel<OrderListResponse>>> searchOrders(
@@ -78,6 +78,23 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.CREATED).body("Order created successfully!");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to create order: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/cancel")
+    public ResponseEntity<String> cancelOrder(
+            @RequestBody CancelOrderRequest cancelOrderRequest,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            Long userId = userService.getUserIdFromUserDetails(userDetails);
+            User user = userService.findUserById(userId);
+
+            orderService.cancelOrder(cancelOrderRequest.getOrderId(), cancelOrderRequest.getCancelReason(), user);
+
+            return ResponseEntity.ok("주문이 성공적으로 취소되었습니다.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("해당 주문을 취소할 수 없습니다. 사유 : " + e.getMessage());
         }
     }
 }

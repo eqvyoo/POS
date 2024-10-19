@@ -46,10 +46,13 @@ public class Order {
     private String paymentAmount;
     @Column(name = "estimated_cooking_time")
     private Time estimatedCookingTime;
-    @Column(name = "delivery_agency")
+    @Column(name = "delivery_agency", nullable = true)
     private String deliveryAgency;
-    @Column(name = "rider_request_time")
+    @Column(name = "rider_request_time", nullable = true)
     private LocalDateTime riderRequestTime;
+
+    @Column (name = "delivery_id", nullable = true)
+    private String deliveryId;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id") // 고객과의 관계
     private Customer customer; // 주문을 한 고객
@@ -64,4 +67,14 @@ public class Order {
     @Column(name = "receipt_data")
     private String receiptData;
 
+    @Column(name = "cancel_reason", nullable = true)
+    private String cancelReason;
+
+    public void updateStatus(Status canceled) {
+        this.status = canceled;
+    }
+
+    public void updateCancelReason(String reason){
+        this.cancelReason = reason;
+    }
 }
