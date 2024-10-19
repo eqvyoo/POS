@@ -27,6 +27,8 @@ public class OrderCreateRequest {
     private String receiptData;            // 영수증 데이터
     private String address;                // 배달 주소
 
+    private String deliveryId;              // 배달 ID
+
     @Getter
     @Setter
     @NoArgsConstructor

@@ -3,10 +3,7 @@ package com.dlnl.deliveryguard.service;
 import com.dlnl.deliveryguard.config.SecurityUtil;
 import com.dlnl.deliveryguard.domain.*;
 import com.dlnl.deliveryguard.repository.*;
-import com.dlnl.deliveryguard.web.DTO.OrderCreateRequest;
-import com.dlnl.deliveryguard.web.DTO.OrderDetailResponse;
-import com.dlnl.deliveryguard.web.DTO.OrderListResponse;
-import com.dlnl.deliveryguard.web.DTO.OrderSearchCriteria;
+import com.dlnl.deliveryguard.web.DTO.*;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -29,6 +26,9 @@ public class OrderService {
     private final CustomerRepository customerRepository;
     private final AddressRepository addressRepository;
     private final OrderMenuRepository orderMenuRepository;
+
+    private final DeliveryPlatformService deliveryPlatformService;
+
     private final PagedResourcesAssembler<OrderListResponse> pagedResourcesAssembler;
 
 
@@ -123,6 +123,7 @@ public class OrderService {
                 .store(store)
                 .address(address)  // 주소 추가
                 .receiptData(orderCreateRequest.getReceiptData())
+                .deliveryId(orderCreateRequest.getDeliveryId())
                 .customer(customer)  // 고객 연결
                 .build();
         orderRepository.save(newOrder);
@@ -141,4 +142,7 @@ public class OrderService {
                 }).collect(Collectors.toList());
 
     }
+
+
+
 }
