@@ -63,7 +63,7 @@ public class CustomerService {
                         .addresses(customer.getAddresses().stream()
                                 .map(addressEntity -> CustomerListResponse.CustomerDTO.AddressDTO.builder()
                                         .id(addressEntity.getId())
-                                        .address(addressEntity.getAddress())
+                                        .address(addressEntity.getDestAddress())
                                         .build())
                                 .collect(Collectors.toList()))
                         .build()
@@ -80,7 +80,7 @@ public class CustomerService {
                 .orElseThrow(() -> new RuntimeException("해당 고객을 찾을 수 없습니다."));
 
         List<String> addressList = customer.getAddresses().stream()
-                .map(Address::getAddress)
+                .map(Address::getDestAddress)
                 .collect(Collectors.toList());
 
 

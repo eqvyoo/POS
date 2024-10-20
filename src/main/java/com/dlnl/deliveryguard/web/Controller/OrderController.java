@@ -18,6 +18,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
@@ -162,21 +164,24 @@ public class OrderController {
     }
 
 
-//    @PostMapping("/rider-call")
-//    public ResponseEntity<String> callRider(
-//            @RequestBody RiderCallRequest riderCallRequest,
-//            @AuthenticationPrincipal UserDetails userDetails) {
-//
-//        try {
-//            Long userId = userService.getUserIdFromUserDetails(userDetails);
-//            User user = userService.findUserById(userId);
-//
-//            orderService.callRider(riderCallRequest, user);
-//
-//            return ResponseEntity.ok("라이더 호출 요청이 성공적으로 처리되었습니다.");
-//        } catch (Exception e) {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("라이더 호출 요청 처리 중 오류 발생: " + e.getMessage());
-//        }
-//    }
 
+    @PostMapping("/rider-request")
+    public ResponseEntity<?> createRiderDeliveryRequest(
+            @RequestBody RiderCallRequest riderCallRequest,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            Long userId = userService.getUserIdFromUserDetails(userDetails);
+            User user = userService.findUserById(userId);
+
+            // RiderDeliveryRequest 생성 및 배달 요청 전송을 Service에서 처리
+            DeliverySubmitResponse deliverySubmitResponse = orderService.handleRiderDeliveryRequest(user, riderCallRequest);
+
+            return ResponseEntity.ok(deliverySubmitResponse);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("배달 요청에 실패했습니다: " + e.getMessage());
+        }
+    }
 }
+

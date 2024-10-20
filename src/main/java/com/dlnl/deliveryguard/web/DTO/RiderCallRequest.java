@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Builder
 public class RiderCallRequest {
 
-    private String orderId;
-    private String delivery_deliveryAgency;
-    private LocalDateTime riderRequestTime;
+    private Long orderId;
+    private String deliveryAgency;
+    private Integer pickupIn;
 }

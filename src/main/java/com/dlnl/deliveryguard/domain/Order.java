@@ -70,11 +70,32 @@ public class Order {
     @Column(name = "cancel_reason", nullable = true)
     private String cancelReason;
 
+    @Column(name = "pickup_in")
+    private Integer pickupIn;   //vroong api의 픽업요청 시간, 단위 : 초, 픽업요청시간. 주문접수시각으로부터 offset 시간 (주문 후 조리완료 및 주문 준비 완료에 걸리는 시간)! 픽업요청가능한 시간 값을 고려해서 배송요청을 하셔야 합니다.
+
+    @Column(name = "contactless")
+    private boolean contactless;    // 비대면 배송 여부
+
     public void updateStatus(Status canceled) {
         this.status = canceled;
     }
 
     public void updateCancelReason(String reason){
         this.cancelReason = reason;
+    }
+
+    public void updateDeliveryAgency(String deliveryAgency){
+        this.deliveryAgency = deliveryAgency;
+    }
+
+    public void updatePickupIn(Integer time){
+        this.pickupIn = time;
+    }
+    public void updateRiderRequestTime(LocalDateTime time){
+        this.riderRequestTime = time;
+    }
+
+    public void updateDeliveryId(String id){
+        this.deliveryId = id;
     }
 }

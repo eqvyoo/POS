@@ -23,7 +23,7 @@ public class CustomCustomerRepositoryImpl implements CustomCustomerRepository {
     @Override
     public Page<Customer> searchCustomersByStore(Long storeId, String nickname, String phoneNumber, String address, Pageable pageable) {
         QCustomer customer = QCustomer.customer;
-        QAddress customerAddress = QAddress.address1;
+        QAddress customerAddress = QAddress.address;
 
         List<Customer> customers = queryFactory
                 .selectFrom(customer)
@@ -62,6 +62,6 @@ public class CustomCustomerRepositoryImpl implements CustomCustomerRepository {
     }
 
     private BooleanExpression addressContains(String address) {
-        return StringUtils.hasText(address) ? QAddress.address1.address.containsIgnoreCase(address) : null;
+        return StringUtils.hasText(address) ? QAddress.address.destAddress.containsIgnoreCase(address) : null;
     }
 }

@@ -3,6 +3,7 @@ package com.dlnl.deliveryguard.service;
 import com.dlnl.deliveryguard.domain.Order;
 import com.dlnl.deliveryguard.web.DTO.CancelDeliveryRequest;
 import com.dlnl.deliveryguard.web.DTO.CancelDeliveryResponse;
+import com.dlnl.deliveryguard.web.DTO.DeliverySubmitResponse;
 import com.dlnl.deliveryguard.web.DTO.RiderDeliveryRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
@@ -19,7 +20,7 @@ public class DeliveryPlatformService {
 
     // 배달 취소 API 요청 메서드
     public CancelDeliveryResponse cancelDelivery(String deliveryId) {
-        String url = "http://localhost:8080/api/delivery/cancel";
+        String url = "http://localhost:8080/api/delivery/cancel";   // todo : 실제 api로 변경 필요
 
         // 요청 데이터 구성
         CancelDeliveryRequest cancelDeliveryRequest = CancelDeliveryRequest.builder()
@@ -29,8 +30,8 @@ public class DeliveryPlatformService {
         // 헤더 설정 (API 키 인증 추가)
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", "ApiKey your-api-key");  // 실제 API 키로 변경
-        headers.set("ApiSecret", "your-api-secret");          // 실제 API 시크릿으로 변경
+        headers.set("Authorization", "ApiKey your-api-key");  // todo : 실제 API 키로 변경
+        headers.set("ApiSecret", "your-api-secret");          // todo : 실제 API 시크릿으로 변경
 
         // HttpEntity를 이용해 요청 본문과 헤더를 모두 포함
         HttpEntity<CancelDeliveryRequest> requestEntity = new HttpEntity<>(cancelDeliveryRequest, headers);
@@ -41,33 +42,27 @@ public class DeliveryPlatformService {
 
         return responseEntity.getBody();
     }
-//
-//    public void callRider(Order order, LocalDateTime riderRequestTime) {
-//        String url = "http://localhost:8080/api/delivery/submit";
-//
-//        // RiderDeliveryRequest DTO로 요청 데이터 구성
-//        RiderDeliveryRequest riderDeliveryRequest = RiderDeliveryRequest.builder()
-//                .requestId(order.getOrderNumber())
-//                .branchCode(order.getStore().getBranchCode())  // 적절한 branchCode 필드를 설정해야 함
-//                .senderPhone(order.getStore().getPhoneNumber())
-//                .destAddress(order.getAddress().getAddress())
-//                .destAddressDetail(order.getAddress().getDetail())
-//                .destLat(order.getAddress().getLatitude())
-//                .destLng(order.getAddress().getLongitude())
-//                .recipientPhone(order.getCustomer().getPhoneNumber())
-//                .clientDeliveryNo(order.getOrderNumber())
-//                .clientOrderNo(order.getOrderNumber())
-//                .deliveryValue(Integer.parseInt(order.getPaymentAmount()))
-//                .build();
-//
-//        // 헤더 설정
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.setContentType(MediaType.APPLICATION_JSON);
-//
-//        // 요청 본문과 헤더를 HttpEntity로 구성
-//        HttpEntity<RiderDeliveryRequest> requestEntity = new HttpEntity<>(riderDeliveryRequest, headers);
-//
-//        // API 호출
-//        restTemplate.postForEntity(url, requestEntity, String.class);
-//    }
+
+
+
+    // 배달 제출 API 요청 메서드
+    public DeliverySubmitResponse submitDelivery(RiderDeliveryRequest deliverySubmitRequest) {
+        String url = "http://localhost:8000/api/delivery/submit";  // todo :  실제 API 엔드포인트로 수정
+
+        // 헤더 설정
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("apikey", "ApiKey");  // todo : 실제 API 키로 수정
+        headers.set("secret", "your-api-secret");  // todo : 실제 시크릿 키로 수정
+        headers.set("Accept-Encoding", "gzip");
+
+        // HttpEntity를 이용해 요청 본문과 헤더를 모두 포함
+        HttpEntity<RiderDeliveryRequest> requestEntity = new HttpEntity<>(deliverySubmitRequest, headers);
+
+        // API 호출
+        ResponseEntity<DeliverySubmitResponse> responseEntity = restTemplate.exchange(
+                url, HttpMethod.POST, requestEntity, DeliverySubmitResponse.class);
+
+        return responseEntity.getBody();
+    }
 }

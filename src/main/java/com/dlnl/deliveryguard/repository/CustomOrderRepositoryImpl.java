@@ -26,7 +26,7 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
         QOrder order = QOrder.order;
         QMenu menu = QMenu.menu;
         QCustomer customer = QCustomer.customer;
-        QAddress address = QAddress.address1;
+        QAddress address = QAddress.address;
         QOrderMenu orderMenu = QOrderMenu.orderMenu;
 
         // fetch join을 사용하여 관련 데이터를 모두 가져옵니다.
@@ -70,7 +70,7 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                         .orderType(o.getOrderType())
                         .status(o.getStatus())
                         .paymentAmount(o.getPaymentAmount())
-                        .address(o.getAddress().getAddress())  // 주문에 연결된 주소 출력
+                        .address(o.getAddress().getDestAddress())  // 주문에 연결된 주소 출력
                         .estimatedCookingTime(o.getEstimatedCookingTime())
                         .deliveryAgency(o.getDeliveryAgency())
                         .riderRequestTime(o.getRiderRequestTime())

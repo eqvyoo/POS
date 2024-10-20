@@ -23,11 +23,17 @@ public class Address {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "address")
-    private String address;
+    @Column(name = "dest_address")
+    private String destAddress;
 
-    @Column(name = "detail")
-    private String detail;
+    @Column(name = "dest_address_detail")
+    private String destAddressDetail;
+
+    @Column(name = "dest_address_road")
+    private String destAddressRoad;
+
+    @Column(name = "dest_address_detail_road")
+    private String destAddressDetailRoad;
 
     @Column(name = "latitude", nullable = false)
     private String latitude;

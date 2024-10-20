@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Time;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -60,7 +61,7 @@ public class OrderService {
                     .orderType(order.getOrderType())
                     .status(order.getStatus())
                     .paymentAmount(order.getPaymentAmount())
-                    .address(order.getAddress().getAddress())
+                    .address(order.getAddress().getDestAddress())   // todo : dest_address_detail, dest_address_road, dest_address_detail_road 등을 추가하는 로직 추가해야함
                     .estimatedCookingTime(order.getEstimatedCookingTime())
                     .deliveryAgency(order.getDeliveryAgency())
                     .riderRequestTime(order.getRiderRequestTime())
@@ -73,11 +74,13 @@ public class OrderService {
             throw new RuntimeException("주문 상세 조회 중 오류가 발생했습니다.");
         }
     }
+
     @Transactional(readOnly = true)
     public Page<OrderListResponse> searchOrders(OrderSearchCriteria criteria, Pageable pageable, User user) {
         Long storeId = user.getStore().getId();
         return orderRepository.searchOrders(criteria, pageable, storeId);
     }
+
     @Transactional
     public void createOrder(OrderCreateRequest orderCreateRequest, User user) {
         // 현재 사용자 가게 확인
@@ -101,12 +104,12 @@ public class OrderService {
 
         // 고객의 주소 처리 (고객의 기존 주소가 없다면 새로 추가)
         Address address = customer.getAddresses().stream()
-                .filter(a -> a.getAddress().equals(orderCreateRequest.getAddress()))
+                .filter(a -> a.getDestAddress().equals(orderCreateRequest.getAddress()))
                 .findFirst()
                 .orElseGet(() -> {
                     // 새로운 주소 생성 및 저장
                     Address newAddress = Address.builder()
-                            .address(orderCreateRequest.getAddress())
+                            .destAddress(orderCreateRequest.getAddress())
                             .customer(customer)
                             .build();
                     return addressRepository.save(newAddress);
@@ -126,7 +129,7 @@ public class OrderService {
                 .receiptData(orderCreateRequest.getReceiptData())
                 .deliveryId(orderCreateRequest.getDeliveryId())
                 .customer(customer)  // 고객 연결
-                .build();
+                .contactless(false).build();    // todo : 컨택리스 여부도 입력으로 받아야하도록 수정.
         orderRepository.save(newOrder);
         // 메뉴 항목 추가
         List<OrderMenu> orderMenus = orderCreateRequest.getMenus().stream()
@@ -186,6 +189,7 @@ public class OrderService {
 
         // todo : 연동된 배달 대행사 API로 고객 호출 요청을 보내는 로직 추가 필요
     }
+
     @Transactional
     public void acceptOrder(Long orderId, Time estimatedCookingTime, User user) {
         Order order = orderRepository.findById(orderId)
@@ -209,7 +213,7 @@ public class OrderService {
                 .store(order.getStore())
                 .address(order.getAddress())
                 .estimatedCookingTime(estimatedCookingTime)  // 조리 예상 시간 설정
-                .build();
+                .contactless(false).build();    // todo : contactless false로 기본으로 들어가도록 설정해두었으나, 입력으로 받아오게 추가해야함.
 
         orderRepository.save(order);
     }
@@ -230,20 +234,66 @@ public class OrderService {
         orderRepository.save(order);
     }
 
-//    @Transactional
-//    public void callRider(RiderCallRequest riderCallRequest, User user) {
-//        // 주문 조회
-//        Order order = orderRepository.findById(Long.parseLong(riderCallRequest.getOrderId()))
-//                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다. ID: " + riderCallRequest.getOrderId()));
-//
-//        // 주문자 권한 확인
-//        if (!order.getStore().getOwner().getId().equals(user.getId())) {
-//            throw new IllegalArgumentException("해당 주문에 대한 접근 권한이 없습니다.");
-//        }
-//
-//        // 배달 대행사 API 호출
-//        deliveryPlatformService.callRider(order, riderCallRequest.getRiderRequestTime());
-//    }
+    @Transactional
+    public DeliverySubmitResponse handleRiderDeliveryRequest(User user, RiderCallRequest riderCallRequest) {
+        // 주문 조회
+        Order order = orderRepository.findById(riderCallRequest.getOrderId())
+                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다. 주문 ID: " + riderCallRequest.getOrderId()));
 
+        // 가게 정보 가져오기
+        Store store = order.getStore();
+        Address address = order.getAddress();
+        Customer customer = order.getCustomer();
 
+        // 주문에 배달 대행사와 픽업 요청 시간을 설정
+        order.updateDeliveryAgency(riderCallRequest.getDeliveryAgency());
+        order.updatePickupIn(riderCallRequest.getPickupIn());
+
+        // RiderDeliveryRequest 구성
+        RiderDeliveryRequest riderDeliveryRequest = RiderDeliveryRequest.builder()
+                .requestId(order.getOrderNumber())  // 주문 번호를 요청 ID로 사용
+                .branchCode(store.getBranchCode())  // 가게의 지점 코드
+                .senderPhone(store.getPhoneNumber())  // 상점 전화번호
+                .destAddress(address.getDestAddress())  // 목적지 주소
+                .destAddressDetail(address.getDestAddressDetail())  // 목적지 상세 주소
+                .destAddressRoad(address.getDestAddressRoad())  // 도로명 주소
+                .destAddressDetailRoad(address.getDestAddressDetailRoad())  // 도로명 상세 주소
+                .destLat(address.getLatitude())  // 위도
+                .destLng(address.getLongitude())  // 경도
+                .paymentMethod("PREPAID")  // 결제 수단 (예시로 PREPAID)
+                .deliveryValue(Integer.parseInt(order.getPaymentAmount()))  // 결제 금액
+                .pickupIn(riderCallRequest.getPickupIn())  // 픽업 요청 시간
+                .recipientPhone(customer.getPhoneNumber())  // 고객 전화번호
+                .contactless(order.isContactless())  // 비대면 여부
+                .clientOrderNo(order.getOrderNumber())  // 신청자 주문 번호
+                .itemDetail(createItemDetails(order))  // 주문 메뉴 상세 정보
+                .build();
+
+        // 라이더 호출 시간 업데이트
+        order.updateRiderRequestTime(LocalDateTime.now());
+        orderRepository.save(order);
+
+        // 배달 플랫폼에 요청 전송 (vroong 등 대행사별 처리)
+        if ("VROONG".equalsIgnoreCase(order.getDeliveryAgency())) {
+            try {
+                return deliveryPlatformService.submitDelivery(riderDeliveryRequest);
+            } catch (Exception e) {
+                throw new IllegalArgumentException("배달 대행사 VROONG로 요청 실패: " + e.getMessage());
+            }
+        }
+
+        throw new IllegalArgumentException("지원하지 않는 배달 대행사입니다: " + riderCallRequest.getDeliveryAgency());
+    }
+
+    private List<RiderDeliveryRequest.ItemDetail> createItemDetails(Order order) {
+        return order.getOrderMenus().stream()
+                .map(orderMenu -> RiderDeliveryRequest.ItemDetail.builder()
+                        .type("ITEM")  // 기본적으로 상품 유형으로 설정
+                        .name(orderMenu.getMenu().getName())  // 메뉴 이름
+                        .quantity(orderMenu.getQuantity())  // 수량
+                        .unitPrice(Integer.parseInt(orderMenu.getMenu().getPrice()))  // 단가
+                        .stockCode(orderMenu.getMenu().getId().toString())  // 메뉴 ID를 재고 코드로 사용
+                        .build())
+                .collect(Collectors.toList());
+    }
 }
