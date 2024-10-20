@@ -214,6 +214,22 @@ public class OrderService {
         orderRepository.save(order);
     }
 
+    @Transactional
+    public void rejectOrder(Long orderId, User user) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 주문을 찾을 수 없습니다. 주문 ID: " + orderId));
+
+        if (!order.getStore().getOwner().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("해당 주문에 대한 접근 권한이 없습니다.");
+        }
+
+        order.updateStatus(Status.CANCELED);
+        order.updateCancelReason("가게에서 주문 요청을 거절했습니다.");  // 거절 사유 고정
+
+        orderRepository.save(order);
+    }
+
 //    @Transactional
 //    public void callRider(RiderCallRequest riderCallRequest, User user) {
 //        // 주문 조회

@@ -141,6 +141,26 @@ public class OrderController {
         }
     }
 
+    // 주문요청 거절 - 가게에서 주문 요청을 거절하는 API
+    @PutMapping("/{orderId}/reject")
+    public ResponseEntity<String> rejectOrder(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            Long userId = userService.getUserIdFromUserDetails(userDetails);
+            User user = userService.findUserById(userId);
+
+            orderService.rejectOrder(orderId, user);
+
+            return ResponseEntity.ok("주문이 성공적으로 거절되었습니다.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("주문 거절 중 오류가 발생했습니다.");
+        }
+    }
+
 
 //    @PostMapping("/rider-call")
 //    public ResponseEntity<String> callRider(
