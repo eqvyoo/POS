@@ -169,5 +169,39 @@ public class OrderService {
                 .orElseThrow(() -> new IllegalArgumentException("배달 ID를 찾을 수 없습니다. 주문 ID: " + orderId));
     }
 
+    @Transactional
+    public void callCustomer(Long orderId, User user) {
+        // 주문 조회
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다. ID: " + orderId));
+
+        // 가게 주인 확인
+        if (!order.getStore().getOwner().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("해당 주문에 접근할 권한이 없습니다.");
+        }
+
+        // 주문 상태를 'CUSTOMER_CALL'로 변경
+        order.updateStatus(Status.CUSTOMER_CALL);
+        orderRepository.save(order);
+
+        // todo : 연동된 배달 대행사 API로 고객 호출 요청을 보내는 로직 추가 필요
+    }
+
+
+//    @Transactional
+//    public void callRider(RiderCallRequest riderCallRequest, User user) {
+//        // 주문 조회
+//        Order order = orderRepository.findById(Long.parseLong(riderCallRequest.getOrderId()))
+//                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다. ID: " + riderCallRequest.getOrderId()));
+//
+//        // 주문자 권한 확인
+//        if (!order.getStore().getOwner().getId().equals(user.getId())) {
+//            throw new IllegalArgumentException("해당 주문에 대한 접근 권한이 없습니다.");
+//        }
+//
+//        // 배달 대행사 API 호출
+//        deliveryPlatformService.callRider(order, riderCallRequest.getRiderRequestTime());
+//    }
+
 
 }

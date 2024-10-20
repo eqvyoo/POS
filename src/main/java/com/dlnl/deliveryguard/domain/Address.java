@@ -26,6 +26,14 @@ public class Address {
     @Column(name = "address")
     private String address;
 
+    @Column(name = "detail")
+    private String detail;
+
+    @Column(name = "latitude", nullable = false)
+    private String latitude;
+
+    @Column(name = "longitude", nullable = false)
+    private String longitude;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id")
     @JsonIgnore

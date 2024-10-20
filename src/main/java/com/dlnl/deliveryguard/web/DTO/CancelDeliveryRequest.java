@@ -1,5 +1,6 @@
 package com.dlnl.deliveryguard.web.DTO;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 @Getter
@@ -8,6 +9,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class CancelDeliveryRequest {
-    private String deliveryId;
 
+    @JsonProperty("delivery_id")
+    private String deliveryId;
 }

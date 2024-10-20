@@ -43,8 +43,8 @@ public class CustomerService {
 
         CustomerListResponse.StoreDTO storeDTO = CustomerListResponse.StoreDTO.builder()
                 .id(store.getId())
-                .storeName(store.getStoreName())
-                .storeAddress(store.getStoreAddress())
+                .storeName(store.getName())
+                .storeAddress(store.getAddress())
                 .build();
 
 

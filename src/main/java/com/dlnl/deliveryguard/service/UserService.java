@@ -64,8 +64,8 @@ public class UserService implements UserDetailsService {
 
         String encodedPassword = passwordEncoder.encode(registrationRequest.getPassword());
         Store store = Store.builder()
-                .storeName(registrationRequest.getStoreName())
-                .storeAddress(registrationRequest.getStoreAddress())
+                .name(registrationRequest.getStoreName())
+                .address(registrationRequest.getStoreAddress())
                 .build();
 
         User user = User.builder()
@@ -272,8 +272,8 @@ public class UserService implements UserDetailsService {
                 .userName(user.getUserName())
                 .phoneNumber(user.getPhoneNumber())
                 .email(user.getEmail())
-                .storeName(store != null ? store.getStoreName() : null)
-                .storeAddress(store != null ? store.getStoreAddress() : null)
+                .storeName(store != null ? store.getName() : null)
+                .storeAddress(store != null ? store.getAddress() : null)
                 .build();
     }
 

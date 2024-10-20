@@ -23,12 +23,17 @@ public class Store {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "store_name")
-    private String storeName;
+    @Column(name = "name", nullable = false)
+    private String name;
 
-    @Column(name = "store_address")
-    private String storeAddress;
+    @Column(name = "branch_code", nullable = false)
+    private String branchCode;  // 지점 코드
 
+    @Column(name = "phone_number", nullable = false)
+    private String phoneNumber;  // 상점 전화번호
+
+    @Column(name = "address", nullable = false)
+    private String address;  // 상점 주소
     @OneToOne
     @JoinColumn(name = "owner_id")
     @JsonIgnore  // owner 필드를 직렬화에서 제외

@@ -97,4 +97,43 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("해당 주문을 취소할 수 없습니다. 사유 : " + e.getMessage());
         }
     }
+
+    // 고객 호출 (포장 주문)
+    @PutMapping("/{orderId}/call")
+    public ResponseEntity<String> callCustomer(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            // 현재 사용자 정보 가져오기
+            Long userId = userService.getUserIdFromUserDetails(userDetails);
+            User user = userService.findUserById(userId);
+
+            // 고객 호출 처리
+            orderService.callCustomer(orderId, user);
+
+            return ResponseEntity.ok("고객 호출이 성공적으로 완료되었습니다.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("고객 호출 중 오류가 발생했습니다.");
+        }
+    }
+
+//    @PostMapping("/rider-call")
+//    public ResponseEntity<String> callRider(
+//            @RequestBody RiderCallRequest riderCallRequest,
+//            @AuthenticationPrincipal UserDetails userDetails) {
+//
+//        try {
+//            Long userId = userService.getUserIdFromUserDetails(userDetails);
+//            User user = userService.findUserById(userId);
+//
+//            orderService.callRider(riderCallRequest, user);
+//
+//            return ResponseEntity.ok("라이더 호출 요청이 성공적으로 처리되었습니다.");
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("라이더 호출 요청 처리 중 오류 발생: " + e.getMessage());
+//        }
+//    }
+
 }
