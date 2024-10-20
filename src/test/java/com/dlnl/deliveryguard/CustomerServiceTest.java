@@ -1,29 +1,20 @@
 package com.dlnl.deliveryguard;
 
-import com.dlnl.deliveryguard.config.SecurityUtil;
 import com.dlnl.deliveryguard.domain.*;
 import com.dlnl.deliveryguard.repository.CustomerRepository;
 import com.dlnl.deliveryguard.repository.OrderRepository;
 import com.dlnl.deliveryguard.repository.UserRepository;
 import com.dlnl.deliveryguard.service.CustomerService;
 import com.dlnl.deliveryguard.web.DTO.CustomerDetailResponse;
-import com.dlnl.deliveryguard.web.DTO.CustomerListResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -64,8 +55,8 @@ class CustomerServiceTest {
                     .nickname("John Doe")
                     .phoneNumber("010-1234-5678")
                     .addresses(Arrays.asList(
-                            Address.builder().id(1L).address("Seoul").build(),
-                            Address.builder().id(2L).address("Busan").build()
+                            Address.builder().id(1L).destAddress("Seoul").build(),
+                            Address.builder().id(2L).destAddress("Busan").build()
                     ))
                     .build();
 
@@ -129,7 +120,7 @@ class CustomerServiceTest {
                 .orderNumber(orderNumber)
                 .orderPlatform(orderPlatform)
                 .customer(customer)
-                .build();
+                .contactless(false).build();
 
         // Mocking
         when(orderRepository.findByOrderNumberAndOrderPlatform(orderNumber, orderPlatform))
@@ -162,6 +153,7 @@ class CustomerServiceTest {
                 .orderNumber(orderNumber)
                 .orderPlatform(orderPlatform)
                 .customer(customer)
+                .contactless(false)
                 .build();
 
         // Mocking

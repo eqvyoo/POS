@@ -72,8 +72,8 @@ class UserServiceTest {
             request.setStoreAddress("123 Test Street");
 
             Store store = Store.builder()
-                    .storeName("Test Store")
-                    .storeAddress("123 Test Street")
+                    .name("Test Store")
+                    .address("123 Test Street")
                     .build();
 
             when(userRepository.existsByLoginID("testuser")).thenReturn(false);
@@ -560,8 +560,8 @@ class UserServiceTest {
 
             // given
             Store store = Store.builder()
-                    .storeName("길동이네 치킨")
-                    .storeAddress("서울시 강남구 역삼동 123-45")
+                    .name("길동이네 치킨")
+                    .address("서울시 강남구 역삼동 123-45")
                     .build();
 
             User mockUser = User.builder()
