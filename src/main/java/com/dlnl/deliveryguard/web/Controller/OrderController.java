@@ -119,6 +119,29 @@ public class OrderController {
         }
     }
 
+    // 주문 요청 수락 처리 API
+    @PutMapping("/{orderId}/accept")
+    public ResponseEntity<String> acceptOrder(
+            @PathVariable Long orderId,
+            @RequestBody AcceptOrderRequest acceptOrderRequest,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            // 현재 사용자의 정보 가져오기
+            Long userId = userService.getUserIdFromUserDetails(userDetails);
+            User user = userService.findUserById(userId);
+
+            // 주문 요청 수락 처리
+            orderService.acceptOrder(orderId, acceptOrderRequest.getEstimatedCookingTime(), user);
+
+            return ResponseEntity.ok("주문이 성공적으로 수락되었습니다.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("주문 수락 중 오류가 발생했습니다.");
+        }
+    }
+
+
 //    @PostMapping("/rider-call")
 //    public ResponseEntity<String> callRider(
 //            @RequestBody RiderCallRequest riderCallRequest,

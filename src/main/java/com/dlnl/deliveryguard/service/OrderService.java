@@ -14,6 +14,7 @@ import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Time;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -171,11 +172,10 @@ public class OrderService {
 
     @Transactional
     public void callCustomer(Long orderId, User user) {
-        // 주문 조회
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다. ID: " + orderId));
 
-        // 가게 주인 확인
+
         if (!order.getStore().getOwner().getId().equals(user.getId())) {
             throw new IllegalArgumentException("해당 주문에 접근할 권한이 없습니다.");
         }
@@ -186,7 +186,33 @@ public class OrderService {
 
         // todo : 연동된 배달 대행사 API로 고객 호출 요청을 보내는 로직 추가 필요
     }
+    @Transactional
+    public void acceptOrder(Long orderId, Time estimatedCookingTime, User user) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 주문을 찾을 수 없습니다. ID: " + orderId));
 
+        if (!order.getStore().getOwner().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("해당 주문에 대한 접근 권한이 없습니다.");
+        }
+
+        // 주문 상태를 'PROCESSING'으로 변경 및 조리 예상 시간 설정
+        order = Order.builder()
+                .id(order.getId())
+                .orderDateTime(order.getOrderDateTime())
+                .orderNumber(order.getOrderNumber())
+                .orderPlatform(order.getOrderPlatform())
+                .paymentMethod(order.getPaymentMethod())
+                .orderType(order.getOrderType())
+                .status(Status.PROCESSING)
+                .paymentAmount(order.getPaymentAmount())
+                .customer(order.getCustomer())
+                .store(order.getStore())
+                .address(order.getAddress())
+                .estimatedCookingTime(estimatedCookingTime)  // 조리 예상 시간 설정
+                .build();
+
+        orderRepository.save(order);
+    }
 
 //    @Transactional
 //    public void callRider(RiderCallRequest riderCallRequest, User user) {
