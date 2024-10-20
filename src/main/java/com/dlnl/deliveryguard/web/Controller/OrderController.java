@@ -174,7 +174,6 @@ public class OrderController {
             Long userId = userService.getUserIdFromUserDetails(userDetails);
             User user = userService.findUserById(userId);
 
-            // RiderDeliveryRequest 생성 및 배달 요청 전송을 Service에서 처리
             DeliverySubmitResponse deliverySubmitResponse = orderService.handleRiderDeliveryRequest(user, riderCallRequest);
 
             return ResponseEntity.ok(deliverySubmitResponse);
@@ -183,5 +182,6 @@ public class OrderController {
                     .body("배달 요청에 실패했습니다: " + e.getMessage());
         }
     }
+
 }
 

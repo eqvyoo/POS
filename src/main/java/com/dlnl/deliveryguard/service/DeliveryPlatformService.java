@@ -1,10 +1,7 @@
 package com.dlnl.deliveryguard.service;
 
 import com.dlnl.deliveryguard.domain.Order;
-import com.dlnl.deliveryguard.web.DTO.CancelDeliveryRequest;
-import com.dlnl.deliveryguard.web.DTO.CancelDeliveryResponse;
-import com.dlnl.deliveryguard.web.DTO.DeliverySubmitResponse;
-import com.dlnl.deliveryguard.web.DTO.RiderDeliveryRequest;
+import com.dlnl.deliveryguard.web.DTO.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -62,6 +59,25 @@ public class DeliveryPlatformService {
         // API 호출
         ResponseEntity<DeliverySubmitResponse> responseEntity = restTemplate.exchange(
                 url, HttpMethod.POST, requestEntity, DeliverySubmitResponse.class);
+
+        return responseEntity.getBody();
+    }
+
+    public TrackDeliveryResponse trackDelivery(String deliveryId) {
+        String url = "http://localhost:8000/api/delivery/track"; // todo :  실제 API 엔드포인트로 수정
+
+        TrackDeliveryRequest trackDeliveryRequest = new TrackDeliveryRequest(deliveryId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("apikey", "ApiKey");  // todo : 실제 API 키로 수정
+        headers.set("secret", "your-api-secret");  // todo : 실제 시크릿 키로 수정
+        headers.set("Accept-Encoding", "gzip");
+
+        HttpEntity<TrackDeliveryRequest> requestEntity = new HttpEntity<>(trackDeliveryRequest, headers);
+
+        ResponseEntity<TrackDeliveryResponse> responseEntity = restTemplate.exchange(
+                url, HttpMethod.POST, requestEntity, TrackDeliveryResponse.class);
 
         return responseEntity.getBody();
     }

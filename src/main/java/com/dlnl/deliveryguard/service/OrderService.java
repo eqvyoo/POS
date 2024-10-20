@@ -6,6 +6,7 @@ import com.dlnl.deliveryguard.repository.*;
 import com.dlnl.deliveryguard.web.DTO.*;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.hateoas.PagedModel;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderService {
 
     private final OrderRepository orderRepository;
@@ -295,5 +297,35 @@ public class OrderService {
                         .stockCode(orderMenu.getMenu().getId().toString())  // 메뉴 ID를 재고 코드로 사용
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void checkAndUpdateDeliveryStatus(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다. ID: " + orderId));
+
+        if ("vroong".equalsIgnoreCase(order.getDeliveryAgency())) {
+            String deliveryId = order.getDeliveryId();
+            TrackDeliveryResponse statusResponse = deliveryPlatformService.trackDelivery(deliveryId);
+
+            log.info("Order ID: {} - Current Status: {}", orderId, statusResponse.getStatus());
+
+            switch (statusResponse.getStatus()) {
+                case "ASSIGNING_AGENT":
+                    order.updateStatus(Status.REQUEST_DELIVERY);
+                    log.info("Order ID: {} - Updated to REQUEST_DELIVERY", orderId);
+                    break;
+                case "PICKING_UP":
+                    order.updateStatus(Status.DELIVERING);
+                    log.info("Order ID: {} - Updated to DELIVERING", orderId);
+                    break;
+                case "COMPLETED":
+                    order.updateStatus(Status.COMPLETED);
+                    log.info("Order ID: {} - Updated to COMPLETED", orderId);
+                    break;
+            }
+
+            orderRepository.save(order);
+        }
     }
 }

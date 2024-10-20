@@ -1,8 +1,6 @@
 package com.dlnl.deliveryguard.web.Controller;
 
-import com.dlnl.deliveryguard.web.DTO.CancelDeliveryRequest;
-import com.dlnl.deliveryguard.web.DTO.CancelDeliveryResponse;
-import com.dlnl.deliveryguard.web.DTO.RiderDeliveryRequest;
+import com.dlnl.deliveryguard.web.DTO.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -69,6 +67,20 @@ public class TestDeliveryController {
         response.put("extra_fee_details", List.of(Map.of("type", "REGIONS", "amount", 500, "title", "삼성동 할증")));
         response.put("distance", 1632.1);
         response.put("balance", 150000);
+
+        return ResponseEntity.ok(response);
+    }
+
+
+    @PostMapping("/track")
+    public ResponseEntity<TrackDeliveryResponse> trackDelivery(@RequestBody TrackDeliveryRequest request) {
+        TrackDeliveryResponse response = TrackDeliveryResponse.builder()
+                .result("SUCCESS")
+                .deliveryId(request.getDeliveryId())
+                .status("DELIVERING")  // 예시로 "DELIVERING" 상태 반환
+                .agentName("김메쉬")
+                .agentPhone("010-1234-5678")
+                .build();
 
         return ResponseEntity.ok(response);
     }

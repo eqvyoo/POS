@@ -37,3 +37,11 @@ spring:
 logging.level:
   org.springframework.SQL: debug
   com.amazonaws.util.EC2MetadataUtils: ERROR
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  metrics:
+    enable:
+      all: true
